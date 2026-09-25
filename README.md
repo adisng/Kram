@@ -227,21 +227,32 @@ KRAM installs both `kram` and `kr`. Power users can leverage quick target aliase
 
 ## 📦 Installation
 
-### Prerequisites
-- macOS 13.0 (Ventura) or later
-- Apple Silicon (M1/M2/M3/M4) or Intel Mac
-- Swift 5.9+ (included with Xcode Command Line Tools)
+### ⚡️ 1-Line Install (Recommended)
+
+Paste this into your macOS Terminal:
 
 ```bash
-# Check Swift version
-swift --version
+curl -fsSL https://raw.githubusercontent.com/adisng/Kram/main/install.sh | bash
 ```
+
+This automatically fetches the latest source, compiles the release binary, places `kram` and `kr` into `~/.local/bin`, and adds it to your `$PATH`.
+
+---
+
+### Homebrew (Coming Soon)
+
+```bash
+brew tap adisng/tap
+brew install kram
+```
+
+---
 
 ### Install from Source
 
 ```bash
 # 1. Clone the repository
-git clone git@github.com:adisng/Kram.git
+git clone https://github.com/adisng/Kram.git
 cd Kram
 
 # 2. Build optimized release binary
@@ -255,8 +266,6 @@ ln -sf ~/.local/bin/kram ~/.local/bin/kr
 # 4. Verify installation
 kr --version
 ```
-
-*(Make sure `~/.local/bin` is in your `$PATH`. Alternatively, you can copy to `/usr/local/bin`: `sudo cp .build/release/kram /usr/local/bin/kram && sudo ln -sf /usr/local/bin/kram /usr/local/bin/kr`)*
 
 ---
 
