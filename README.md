@@ -12,6 +12,7 @@
   <a href="https://github.com/adisng/Kram"><img src="https://img.shields.io/badge/Dependencies-Zero-brightgreen?style=flat-square" alt="Dependencies"></a>
   <a href="https://github.com/adisng/Kram"><img src="https://img.shields.io/badge/Privacy-100%25%20Local%20%26%20Offline-blue?style=flat-square&logo=shield" alt="Privacy"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-lightgrey?style=flat-square" alt="License"></a>
+  <a href="https://buymeacoffee.com/singh09aada"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Beer-🍺-ffdd00?style=flat-square&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me a Beer"></a>
   <a href="https://twitter.com/intent/tweet?text=KRAM%20%E2%80%94%20Fast%2C%20safe%20local%20file%20organizer%20for%20macOS&url=https%3A%2F%2Fgithub.com%2Fadisng%2FKram"><img src="https://img.shields.io/badge/share-000000?logo=x&logoColor=white&style=flat-square" alt="Share on X"></a>
 </p>
 
@@ -347,7 +348,11 @@ KRAM categorizes files based on their extensions using deterministic mapping in 
 
 ## Support
 
-If KRAM helped bring order to your Mac, give it a star on GitHub, share it with others, or open an issue or pull request.
+If KRAM helped bring order to your Mac, give it a star on GitHub, share it with others, or buy me a cold beer 🍺:
+
+<p align="left">
+  <a href="https://buymeacoffee.com/singh09aada" target="_blank"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a beer&emoji=🍺&slug=singh09aada&button_colour=FFDD00&font_colour=000000&font_family=Lato&outline_colour=000000&coffee_colour=ffffff" alt="Buy Me a Beer" height="42" /></a>
+</p>
 
 ## Contributing
 
