@@ -239,11 +239,10 @@ This automatically fetches the latest source, compiles the release binary, place
 
 ---
 
-### Homebrew (Coming Soon)
+### 🍺 Homebrew
 
 ```bash
-brew tap adisng/tap
-brew install kram
+brew install adisng/tap/kram
 ```
 
 ---
