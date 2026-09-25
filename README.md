@@ -1,94 +1,118 @@
 <div align="center">
-
-# 🐭 KRAM
-### **Keep. Rearrange. Automate. Manage.**
-
-*The ultra-fast, zero-dependency, native Swift file organizer for macOS.*  
-*Built for terminal lovers with a clean Mole (`mo`)-inspired aesthetic.*
-
-[![macOS](https://img.shields.io/badge/macOS-13.0%2B-black?style=for-the-badge&logo=apple&logoColor=white)](https://apple.com)
-[![Swift](https://img.shields.io/badge/Swift-5.9%2B-orange?style=for-the-badge&logo=swift&logoColor=white)](https://swift.org)
-[![Dependencies](https://img.shields.io/badge/Dependencies-Zero-brightgreen?style=for-the-badge)](https://github.com/adisng/Kram)
-[![Privacy](https://img.shields.io/badge/Privacy-100%25%20Local%20%26%20Offline-blue?style=for-the-badge&logo=shield)](https://github.com/adisng/Kram)
-[![License](https://img.shields.io/badge/License-MIT-lightgrey?style=for-the-badge)](LICENSE)
-
-<br/>
-
-```
-      __   ___  __        __   ___ 
-     |  \ |__  /__` |__/ |  | |__  
-     |__/ |___ .__/ |  \ |__| |___ 
-                                   
-      kram · Keep Rearrange Automate Manage
-```
-
-<br/>
-
-[Overview](#-overview) •
-[Features](#-key-features) •
-[Interactive UI](#-interactive-terminal-ui) •
-[CLI Quick Shortcuts](#-short-aliases--command-shorthand) •
-[Installation](#-installation) •
-[Safety Engine](#-safety-first-architecture) •
-[License](#-license)
-
----
-
+  <h1>🐭 KRAM</h1>
+  <p><em>Keep. Rearrange. Automate. Manage. — the ultra-fast, zero-dependency, native Swift file organizer for macOS.</em></p>
 </div>
 
-<br/>
+<p align="center">
+  <a href="https://github.com/adisng/Kram/stargazers"><img src="https://img.shields.io/github/stars/adisng/Kram?style=flat-square" alt="Stars"></a>
+  <a href="https://github.com/adisng/Kram/releases"><img src="https://img.shields.io/github/v/tag/adisng/Kram?label=version&style=flat-square" alt="Version"></a>
+  <a href="https://apple.com"><img src="https://img.shields.io/badge/macOS-13.0%2B-black?style=flat-square&logo=apple&logoColor=white" alt="macOS"></a>
+  <a href="https://swift.org"><img src="https://img.shields.io/badge/Swift-5.9%2B-orange?style=flat-square&logo=swift&logoColor=white" alt="Swift"></a>
+  <a href="https://github.com/adisng/Kram"><img src="https://img.shields.io/badge/Dependencies-Zero-brightgreen?style=flat-square" alt="Dependencies"></a>
+  <a href="https://github.com/adisng/Kram"><img src="https://img.shields.io/badge/Privacy-100%25%20Local%20%26%20Offline-blue?style=flat-square&logo=shield" alt="Privacy"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-lightgrey?style=flat-square" alt="License"></a>
+  <a href="https://twitter.com/intent/tweet?text=KRAM%20%E2%80%94%20Fast%2C%20safe%20local%20file%20organizer%20for%20macOS&url=https%3A%2F%2Fgithub.com%2Fadisng%2FKram"><img src="https://img.shields.io/badge/share-000000?logo=x&logoColor=white&style=flat-square" alt="Share on X"></a>
+</p>
 
-## ✨ Overview
+<!-- TODO: replace with a real terminal recording or screenshot of `kr` running the picker + dry-run flow -->
+<!-- <p align="center"><img src="./docs/img/kram-hero.png" alt="KRAM Terminal UI" width="1000" /></p> -->
 
-Your `Downloads` and `Desktop` folders shouldn't look like a landfill. 
+## Features
 
-**KRAM** is a lightning-fast macOS command-line file organizer written in native Swift. It declutters messy directories in milliseconds by categorizing files into clean folders (`Documents/`, `Images/`, `Spreadsheets/`, `Code/`, `Archives/`, `Videos/`, `Audio/`, etc.) — featuring dry-run previews, non-destructive collision avoidance, live terminal progress, an interactive folder navigator, and **instant 1-click transaction undos**.
+- **Interactive folder picker**: Run `kr` with zero arguments for an in-place terminal directory browser with quick picks, recent folders, and Tab path auto-completion
+- **Ironclad safety boundary**: Hard-blocks system roots, user-protected dotfiles, symlink escapes, and path traversal with zero override mechanism
+- **True transactional undo**: Every sorting run is recorded in an immutable journal, fully reversible in milliseconds with automatic cleanup of empty category directories
+- **Safe by default**: Always previews operations in dry-run mode first, requiring an explicit `--apply` (`-a`) confirmation before moving any file
+- **Express aliases & combined flags**: Fast shorthand including `kr dl -a`, `kr desk`, `kr here`, and combined flags like `kr dl -arv`
+- **Lifetime usage analytics**: Tracks total runs, files organized, top categories, and frequently organized directories with `kr stats` and `kr last`
 
-No Python runtime. No Node.js. No dependencies. No cloud telemetry. 100% offline & local.
+## Quick Start
 
----
+KRAM requires macOS 13.0 or newer and Swift 5.9+.
 
-## 🚀 Key Features
+**Install via script**
 
-- **🐭 Mole-Inspired Terminal UI**: Minimalist box-drawing borders (`━`), clean emoji category badges, 30-column aligned directional arrows (`→` and `←`), live file progress, and disk space calculation.
-- **🛡️ Ironclad Safety Boundary**: `SafetyGuard` enforces strict boundaries. It refuses to touch system paths (`/System`, `/Library`, `/usr`), user protected paths (`~/.ssh`, `~/.config`), symlink escapes, or path traversal exploits (`..`).
-- **↩️ True Transactional Undo**: Every move operation is logged as an immutable JSON transaction. Reverse any sorting run completely with `kr undo`.
-- **⌨️ Interactive Directory Picker**: Run `kr` with no arguments to get an interactive folder browser with quick picks, recent folders, and Tab path auto-completion.
-- **⚡️ Express Aliases & Combined Flags**: Use `kr dl -a`, `kr desk`, `kr here`, or combined flags like `kr dl -arv` for effortless power-user flows.
-- **📊 Lifetime Usage Stats**: Track total runs, files organized, top categories, and frequently used folders with `kr stats` and `kr last`.
-
----
-
-## 🖥 Terminal Experience
-
-### 1. Interactive Directory Picker (`kr` with no arguments)
-Run `kr` anywhere with zero arguments to launch the visual folder browser:
-
-```text
-🐭 KRAM — Where do you want to organize?
-
-  📍 Quick Picks
-  ──────────────────────────────────────────
-  ❯ 📥 Downloads       ~/Downloads            (48 files)
-    🖥  Desktop         ~/Desktop              (12 files)
-    📄 Documents       ~/Documents            (187 files)
-    📁 Current folder  /Users/aditya/Projects (7 files)
-
-  📂 Recent Folders
-  ──────────────────────────────────────────
-    📁 ~/Desktop/client-assets                (19 files)
-    📁 ~/Projects/webapp                      (31 files)
-
-  🔍 Browse...             (open folder picker)
-  ✏️  Type a path...       (enter manually)
-
-  ↑↓ navigate · Enter select · / search · q quit
+```bash
+curl -fsSL https://raw.githubusercontent.com/adisng/Kram/main/install.sh | bash
 ```
 
----
+The installer builds the release binary, places `kram` and `kr` into `~/.local/bin`, and adds the directory to your shell configuration if needed.
 
-### 2. Dry-Run Preview (Safe by default)
-`kram` always defaults to a dry-run preview before touching anything:
+**Run**
+
+```bash
+kr                           # Interactive directory picker
+kr dl                        # Dry-run preview on ~/Downloads
+kr dl -a                     # Organize ~/Downloads
+kr dl -ar                    # Apply + scan subdirectories recursively
+kr desk -a                   # Organize ~/Desktop
+kr docs -a                   # Organize ~/Documents
+kr here -a                   # Organize current working directory (pwd)
+kr <directory> -a            # Organize any specific folder path
+kr undo                      # Undo last transaction (or kr dl -u)
+kr last                      # Show details of the last transaction
+kr stats                     # Show lifetime statistics
+kr help                      # Show help and usage reference
+kr --version                 # Show installed version
+```
+
+**Preview safely**
+
+```bash
+kr dl                        # Preview ~/Downloads (safe dry-run by default)
+kr desk                      # Preview ~/Desktop
+kr docs                      # Preview ~/Documents
+kr here                      # Preview current working directory
+kr ~/Projects/Assets         # Preview any folder path
+kr dl -v                     # Verbose preview (shows skipped files & reasons)
+kr dl -r                     # Recursive dry-run preview
+kr dl -n                     # Explicit dry-run flag
+```
+
+<details>
+<summary><strong>Other install options</strong></summary>
+
+**Build from source**
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/adisng/Kram.git
+cd Kram
+
+# 2. Build optimized release binary
+swift build -c release
+
+# 3. Install globally to your local bin
+mkdir -p ~/.local/bin
+cp .build/release/kram ~/.local/bin/kram
+ln -sf ~/.local/bin/kram ~/.local/bin/kr
+
+# 4. Ensure ~/.local/bin is in your PATH
+export PATH="$HOME/.local/bin:$PATH"
+
+# 5. Verify installation
+kr --version
+```
+
+Add `export PATH="$HOME/.local/bin:$PATH"` to your `~/.zshrc` or `~/.bash_profile` if not already present.
+
+</details>
+
+## Safety
+
+KRAM is architected around strict safety boundaries to eliminate accidental file loss or unexpected mutations:
+
+- **Single Source of Truth Protection**: Handled by [`SafetyGuard.swift`](Sources/KRAMCore/SafetyGuard.swift). All filesystem operations validate paths against system directories (`/System`, `/Library`, `/usr`, `/bin`, `/sbin`, `/private`, `/Applications`, `/Volumes`, `/dev`, `/var`, `/etc`, `/opt`, `/cores`, `/Network`) and user-protected configurations (`~/.ssh`, `~/.config`, `~/.gnupg`, `~/.aws`, `~/.kube`, `.zshrc`, `.bashrc`, `.bash_profile`, `.profile`, `.zprofile`, `.gitconfig`).
+- **Symlink Escape & Path Traversal Prevention**: Symlinks that resolve outside the selected boundary directory are blocked (`SafetyViolation.symlinkEscape`). Traversal patterns such as `..` are validated and rejected prior to path resolution.
+- **Zero Overwrites**: File collisions are resolved non-destructively by [`OperationPlanner`](Sources/KRAMCore/OperationPlanner.swift), appending incremental suffixes (`name (1).ext`, `name (2).ext`). Files are never overwritten or deleted during organization.
+- **Transaction Journaling**: Every completed operation is serialized as an immutable JSON transaction under `~/Library/Application Support/KRAM/transactions/`. Running `kr undo` reverses operations in exact reverse order and removes empty category directories left behind.
+- **Read-Only vs Mutating**: Organization runs with `--apply` (`-a`) are the only operations that move files. Dry-run previews, `kr stats`, `kr last`, and `kr help` are strictly read-only and never modify the filesystem.
+
+## Features in Detail
+
+### Dry-Run Preview
+
+Running `kr` against any target defaults to a safe dry-run preview without moving any files. Add `-v` to inspect skipped files (such as hidden files or files already placed in category folders):
 
 ```bash
 kr dl
@@ -103,35 +127,35 @@ To move:     8 files
 Skipped:     0 files
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-➤ 📄 Documents                              2 files
+➤ 📄 Documents                       2 files
     resume.pdf                    ← resume.pdf
     notes.docx                    ← notes.docx
 
-➤ 🖼  Images                                 1 file
+➤ 🖼  Images                          1 file
     photo.jpg                     ← photo.jpg
 
-➤ 🗜  Archives                              1 file
+➤ 🗜  Archives                       1 file
     project.zip                   ← project.zip
 
-➤ 🎵 Audio                                 1 file
+➤ 🎵 Audio                           1 file
     song.mp3                      ← song.mp3
 
-➤ 🎬 Videos                                1 file
+➤ 🎬 Videos                          1 file
     video.mp4                     ← video.mp4
 
-➤ 📊 Spreadsheets                          1 file
+➤ 📊 Spreadsheets                   1 file
     data.csv                      ← data.csv
 
-➤ 💻 Code                                  1 file
+➤ 💻 Code                            1 file
     script.py                     ← script.py
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Run  kram ~/Downloads --apply  to execute.
 ```
 
----
+### Apply + Live Move
 
-### 3. Apply with Confirmation & Live Move Progress
+Pass `-a` (or `--apply`) to execute. KRAM displays a confirmation prompt, then moves files category-by-category with live progress and reports free disk space:
 
 ```bash
 kr dl -a
@@ -164,11 +188,9 @@ Proceed? [y/N]: y
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
----
+### Undo
 
-### 4. Instant 1-Click Undo
-
-Made a mistake? Reversed in a fraction of a second:
+Run `kr undo` (or `kr dl -u`) to roll back the most recent transaction. Files are restored to their original locations and empty category directories are automatically removed:
 
 ```bash
 kr undo
@@ -195,117 +217,131 @@ Files:         8 to restore
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
----
+### Interactive Directory Picker
 
-## ⚡️ Short Aliases & Command Shorthand
-
-KRAM installs both `kram` and `kr`. Power users can leverage quick target aliases and combined flags:
-
-### Quick Targets
-| Target | Expands To | Example |
-|---|---|---|
-| `dl` | `~/Downloads` | `kr dl -a` |
-| `desk` | `~/Desktop` | `kr desk -a` |
-| `docs` | `~/Documents` | `kr docs -a` |
-| `here` | Current Directory (`pwd`) | `kr here -a` |
-
-### Combined Flags
-- `kr dl -a` $\rightarrow$ Apply organization
-- `kr dl -r` $\rightarrow$ Recursive organization (scans subdirectories)
-- `kr dl -ar` $\rightarrow$ Apply + recursive combined
-- `kr dl -v` $\rightarrow$ Verbose preview (shows skipped hidden files & reasons)
-- `kr dl -n` $\rightarrow$ Explicit dry-run
-- `kr dl -u` $\rightarrow$ Undo last operation on Downloads
-
-### Commands
-- `kr undo` $\rightarrow$ Reverses the last transaction regardless of directory
-- `kr last` $\rightarrow$ Displays full breakdown of the last transaction log
-- `kr stats` $\rightarrow$ Shows lifetime statistics and top categories
-- `kr help` $\rightarrow$ Quick reference cheat-sheet
-
----
-
-## 📦 Installation
-
-### ⚡️ 1-Line Install (Recommended)
-
-Paste this into your macOS Terminal:
+Running `kr` without arguments opens the full-screen terminal picker with quick picks, recent directories, folder browsing, and manual path completion:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adisng/Kram/main/install.sh | bash
+kr
 ```
 
-This automatically fetches the latest source, compiles the release binary, places `kram` and `kr` into `~/.local/bin`, and adds it to your `$PATH`.
+```text
+🐭 KRAM — Where do you want to organize?
 
----
+  📍 Quick Picks
+  ──────────────────────────────────────────
+  ❯ 📥 Downloads       ~/Downloads            (48 files)
+    🖥  Desktop        ~/Desktop              (12 files)
+    📄 Documents       ~/Documents            (187 files)
+    📁 Current folder  /Users/aditya/Projects (7 files)
 
-### 🍺 Homebrew
+  📂 Recent Folders
+  ──────────────────────────────────────────
+    📁  ~/Desktop/client-assets               (19 files)
+    📁  ~/Projects/webapp                     (31 files)
+
+    🔍 Browse...             (open folder picker)
+    ✏️   Type a path...       (enter manually)
+
+──────────────────────────────────────────
+  ↑↓ navigate · Enter select · / search · q quit
+```
+
+Selecting **Browse...** opens an in-place folder browser scoped to your home directory:
+
+```text
+🐭 KRAM — Browse Folders
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  📍 ~/Downloads
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ❯ 📁 client-assets                  (19 files)
+    📁 invoice-scans                  (4 files)
+    🔒 Library                        (protected)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ↑↓ navigate · → enter folder · ← go back
+  Enter select highlighted · Esc back · q cancel
+```
+
+### Lifetime Stats
+
+`kr stats` displays aggregate counts across all sorting sessions, including files organized, most frequently used directories, and top categories:
 
 ```bash
-brew install adisng/tap/kram
+kr stats
 ```
 
----
+```text
+🐭 KRAM — Stats
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Total runs:       12
+Files organized:  1912
+Last run:         26 Sep 2026 · 1:37 AM
+Most used dir:    ~/Downloads
 
-### Install from Source
+Top categories:
+  📄 Documents        896 files
+  🖼  Images          617 files
+  🗜  Archives        105 files
+  📦 Other            88 files
+  🎬 Videos           65 files
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### Last Transaction
+
+`kr last` prints a summary of the most recently executed transaction:
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/adisng/Kram.git
-cd Kram
-
-# 2. Build optimized release binary
-swift build -c release
-
-# 3. Install globally to your local bin
-mkdir -p ~/.local/bin
-cp .build/release/kram ~/.local/bin/kram
-ln -sf ~/.local/bin/kram ~/.local/bin/kr
-
-# 4. Verify installation
-kr --version
+kr last
 ```
 
----
+```text
+🐭 KRAM — Last Transaction
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Directory:   ~/Downloads
+Applied:     26 Sep 2026 · 12:33 AM
+Files moved: 8
 
-## 🛡 Safety-First Architecture
+  📄 Documents        2 files
+  🖼  Images          1 file
+  🗜  Archives        1 file
+  🎵 Audio            1 file
+  🎬 Videos           1 file
+  📊 Spreadsheets     1 file
+  💻 Code             1 file
 
-KRAM is designed around a zero-data-loss guarantee:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Undo:  kr dl -u   or   kram ~/Downloads --undo
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
 
-1. **No Overwrite Policy**: Destination filename collisions are automatically resolved by appending `(1)`, `(2)`, etc. Files are **never** overwritten or deleted.
-2. **Strict Boundary Enforcement (`SafetyGuard`)**: All filesystem operations are inspected before execution:
-   - System directories (`/System`, `/Library`, `/usr`, `/private`, etc.) are hard-blocked.
-   - User critical directories (`~/.ssh`, `~/.config`, shell dotfiles) are shielded.
-   - Symlinks resolving outside the target directory are rejected immediately.
-3. **Transaction Journaling**: Transactions are serialized as formatted JSON under:
-   `~/Library/Application Support/KRAM/transactions/`
-   Undo reads from this journal, reversing files in reverse order and deleting empty category folders.
+## File Category Support
 
----
-
-## 📊 File Category Support
-
-KRAM organizes over 60+ common file extensions out of the box:
+KRAM categorizes files based on their extensions using deterministic mapping in [`ExtensionClassifier`](Sources/KRAMCore/Classifier.swift):
 
 | Category | Extensions |
 |---|---|
-| **📄 Documents** | `.pdf`, `.doc`, `.docx`, `.txt`, `.rtf`, `.odt`, `.pages`, `.md`, `.tex`, `.key` |
-| **🖼 Images** | `.jpg`, `.jpeg`, `.png`, `.gif`, `.bmp`, `.tiff`, `.webp`, `.heic`, `.heif`, `.svg`, `.raw` |
-| **🎬 Videos** | `.mp4`, `.mov`, `.avi`, `.mkv`, `.wmv`, `.flv`, `.webm`, `.m4v`, `.mpg` |
-| **🎵 Audio** | `.mp3`, `.wav`, `.aac`, `.flac`, `.ogg`, `.wma`, `.m4a`, `.opus` |
-| **🗜 Archives** | `.zip`, `.rar`, `.tar`, `.gz`, `.7z`, `.dmg`, `.iso`, `.pkg` |
-| **📊 Spreadsheets** | `.xls`, `.xlsx`, `.csv`, `.tsv`, `.numbers`, `.ods` |
-| **💻 Code** | `.py`, `.js`, `.ts`, `.swift`, `.java`, `.cpp`, `.c`, `.go`, `.rs`, `.html`, `.css`, `.sh`, `.json`, `.yaml` |
-| **🔤 Fonts** | `.ttf`, `.otf`, `.woff`, `.woff2` |
-| **📚 eBooks** | `.epub`, `.mobi`, `.azw`, `.azw3` |
+| **📄 Documents** | `.pdf`, `.doc`, `.docx`, `.txt`, `.rtf`, `.odt`, `.pages`, `.md`, `.tex`, `.wpd`, `.key` |
+| **🖼 Images** | `.jpg`, `.jpeg`, `.png`, `.gif`, `.bmp`, `.tiff`, `.tif`, `.webp`, `.heic`, `.heif`, `.svg`, `.ico`, `.raw`, `.cr2`, `.nef`, `.arw` |
+| **🎬 Videos** | `.mp4`, `.mov`, `.avi`, `.mkv`, `.wmv`, `.flv`, `.webm`, `.m4v`, `.mpg`, `.mpeg`, `.3gp`, `.ogv` |
+| **🎵 Audio** | `.mp3`, `.wav`, `.aac`, `.flac`, `.ogg`, `.wma`, `.m4a`, `.aiff`, `.opus`, `.mid`, `.midi` |
+| **🗜 Archives** | `.zip`, `.rar`, `.tar`, `.gz`, `.bz2`, `.7z`, `.xz`, `.dmg`, `.iso`, `.pkg`, `.deb`, `.rpm` |
+| **📊 Spreadsheets** | `.xls`, `.xlsx`, `.csv`, `.tsv`, `.ods`, `.numbers` |
+| **💻 Code** | `.py`, `.js`, `.ts`, `.swift`, `.kt`, `.java`, `.c`, `.cpp`, `.h`, `.hpp`, `.cs`, `.go`, `.rs`, `.rb`, `.php`, `.html`, `.css`, `.sh`, `.bash`, `.zsh`, `.fish`, `.ps1`, `.lua`, `.r`, `.sql`, `.json`, `.yaml`, `.yml`, `.toml`, `.xml`, `.ini`, `.env`, `.m` |
+| **🔤 Fonts** | `.ttf`, `.otf`, `.woff`, `.woff2`, `.eot` |
+| **📚 eBooks** | `.epub`, `.mobi`, `.azw`, `.azw3`, `.fb2` |
 | **⚙️ Executables** | `.exe`, `.bin`, `.run` |
+| **📦 Other** | Any unrecognized extension or extensionless file (fallback) |
 
----
+## Support
 
-## 🤝 Contributing
+If KRAM helped you keep your Mac organized, give it a star on GitHub, share it with others, or open an issue or pull request.
 
-Contributions, feature requests, and suggestions are welcome!
-Feel free to open an issue or submit a pull request.
+## Contributing
+
+Contributions, bug reports, and suggestions are welcome!
 
 ```bash
 git checkout -b feature/awesome-feature
@@ -313,14 +349,6 @@ git commit -m "feat: add awesome feature"
 git push origin feature/awesome-feature
 ```
 
----
+## License
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-<div align="center">
-
-Made with 🐭 for macOS by [Aditya Singh](https://github.com/adisng)
-
-</div>
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
