@@ -47,7 +47,7 @@ public final class FileScanner {
 
         var results: [ScannedFile] = []
         for url in contents {
-            if let file = try? makeScannedFile(url: url, skipDirectories: true) {
+            if let file = try? makeScannedFile(url: url, rootDirectory: directory, skipDirectories: true) {
                 results.append(file)
             }
         }
@@ -67,7 +67,7 @@ public final class FileScanner {
 
         var results: [ScannedFile] = []
         for case let url as URL in enumerator {
-            if let file = try? makeScannedFile(url: url, skipDirectories: true) {
+            if let file = try? makeScannedFile(url: url, rootDirectory: directory, skipDirectories: true) {
                 results.append(file)
             }
         }
@@ -76,7 +76,7 @@ public final class FileScanner {
 
     // MARK: - File Builder
 
-    private func makeScannedFile(url: URL, skipDirectories: Bool) throws -> ScannedFile? {
+    private func makeScannedFile(url: URL, rootDirectory: URL? = nil, skipDirectories: Bool) throws -> ScannedFile? {
         let resourceValues = try url.resourceValues(
             forKeys: [.isHiddenKey, .isSymbolicLinkKey, .isDirectoryKey]
         )
@@ -91,9 +91,18 @@ public final class FileScanner {
         // Skip directories in flat mode
         if skipDirectories && isDirectory { return nil }
 
-        // Skip files already inside a KRAM category folder
-        let parentFolderName = url.deletingLastPathComponent().lastPathComponent
-        if categoryFolderNames.contains(parentFolderName) { return nil }
+        // Skip files already inside a KRAM category subfolder
+        let parentURL = url.deletingLastPathComponent().standardizedFileURL
+        if let rootURL = rootDirectory?.standardizedFileURL {
+            if parentURL.path != rootURL.path {
+                if parentURL.deletingLastPathComponent().path == rootURL.path && categoryFolderNames.contains(parentURL.lastPathComponent) {
+                    return nil
+                }
+            }
+        } else {
+            let parentFolderName = parentURL.lastPathComponent
+            if categoryFolderNames.contains(parentFolderName) { return nil }
+        }
 
         let name = url.lastPathComponent
         let ext  = url.pathExtension.lowercased()

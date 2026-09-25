@@ -19,6 +19,10 @@ public final class OperationPlanner {
             let rawDest     = categoryDir.appendingPathComponent(file.name)
             let finalDest   = resolveCollision(destination: rawDest)
 
+            if file.url.standardizedFileURL.path == finalDest.standardizedFileURL.path {
+                continue
+            }
+
             let op = PlannedOperation(
                 sourceURL: file.url,
                 destinationURL: finalDest,
