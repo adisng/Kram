@@ -1,5 +1,6 @@
 <div align="center">
-  <h1>🐭 KRAM</h1>
+  <h1>🐭 KRAM · क्रम</h1>
+  <p><em><strong>Krama</strong> (क्रम) — Sanskrit for order, sequence, and systematic arrangement.</em></p>
   <p><em>Keep. Rearrange. Automate. Manage. — the ultra-fast, zero-dependency, native Swift file organizer for macOS.</em></p>
 </div>
 
@@ -16,6 +17,9 @@
 
 <!-- TODO: replace with a real terminal recording or screenshot of `kr` running the picker + dry-run flow -->
 <!-- <p align="center"><img src="./docs/img/kram-hero.png" alt="KRAM Terminal UI" width="1000" /></p> -->
+
+> 🕉 **क्रम (Krama)**: Sanskrit for *order, method, and systematic arrangement*.  
+> KRAM brings deliberate order to chaotic directories in milliseconds — sorting messy folders into clean, categorized structures with zero dependencies, absolute filesystem safety, and instant 1-click undos.
 
 ## Features
 
@@ -343,7 +347,7 @@ KRAM categorizes files based on their extensions using deterministic mapping in 
 
 ## Support
 
-If KRAM helped you keep your Mac organized, give it a star on GitHub, share it with others, or open an issue or pull request.
+If KRAM helped bring order to your Mac, give it a star on GitHub, share it with others, or open an issue or pull request.
 
 ## Contributing
 
