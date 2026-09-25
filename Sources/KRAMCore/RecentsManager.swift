@@ -18,13 +18,18 @@ public final class RecentsManager {
     public static let shared = RecentsManager()
 
     private let fm = FileManager.default
+    private let customStorageURL: URL?
 
     private var recentsFile: URL {
+        if let customStorageURL = customStorageURL {
+            return customStorageURL
+        }
         let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         return appSupport.appendingPathComponent("KRAM/recents.json")
     }
 
-    public init() {
+    public init(storageURL: URL? = nil) {
+        self.customStorageURL = storageURL
         let dir = recentsFile.deletingLastPathComponent()
         try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
     }

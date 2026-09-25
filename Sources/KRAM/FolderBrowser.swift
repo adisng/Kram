@@ -11,12 +11,6 @@ public final class FolderBrowser {
     }
 
     private static let categoryFolderNames: Set<String> = Set(FileCategory.allCases.map { $0.rawValue })
-    private static let protectedNames: Set<String> = [
-        "Library", ".ssh", ".config", "Applications", ".gnupg", ".aws", ".kube"
-    ]
-    private static let systemProtectedRoots: Set<String> = [
-        "/System", "/Library", "/usr", "/bin", "/sbin", "/private", "/Applications", "/Volumes", "/dev", "/var", "/etc", "/opt"
-    ]
 
     public static func iconForFolder(_ name: String) -> String {
         switch name.lowercased() {
@@ -65,7 +59,8 @@ public final class FolderBrowser {
         }
     }
 
-    public static func browse(startingAt initialURL: URL) -> URL? {
+    public static func browse(startingAt initialURL: URL) -> PickerResult {
+        let home = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL.path
         var currentURL = initialURL.standardizedFileURL
         var selectedIndex = 0
 
@@ -76,6 +71,8 @@ public final class FolderBrowser {
             Terminal.restoreMode(originalTerm)
         }
 
+        Terminal.clearScreen()
+
         while true {
             let items = loadSubfolders(of: currentURL)
             if selectedIndex >= items.count {
@@ -85,6 +82,10 @@ public final class FolderBrowser {
             render(currentURL: currentURL, items: items, selectedIndex: selectedIndex)
 
             let key = Terminal.readKey()
+            if key == .unknown && feof(stdin) != 0 {
+                Terminal.clearScreen()
+                return .cancelled
+            }
             switch key {
             case .up:
                 if selectedIndex > 0 { selectedIndex -= 1 }
@@ -100,23 +101,34 @@ public final class FolderBrowser {
                 }
             case .left:
                 let parent = currentURL.deletingLastPathComponent()
-                if parent.path != currentURL.path && !systemProtectedRoots.contains(currentURL.path) {
+                let currentPath = currentURL.standardizedFileURL.path
+                let parentPath = parent.standardizedFileURL.path
+                if parentPath != currentPath
+                    && currentPath != home
+                    && (parentPath == home || parentPath.hasPrefix(home + "/"))
+                    && !SafetyGuard.shared.isProtectedPath(currentURL) {
                     currentURL = parent
                     selectedIndex = 0
                 }
             case .enter:
                 if items.isEmpty {
-                    return currentURL
+                    Terminal.clearScreen()
+                    return .selected(currentURL)
                 } else if selectedIndex < items.count {
                     let item = items[selectedIndex]
                     if item.isProtected {
                         // Protected item cannot be selected
                         continue
                     }
-                    return item.url
+                    Terminal.clearScreen()
+                    return .selected(item.url)
                 }
-            case .escape, .quit:
-                return nil
+            case .escape:
+                Terminal.clearScreen()
+                return .back
+            case .quit:
+                Terminal.clearScreen()
+                return .cancelled
             default:
                 break
             }
@@ -141,7 +153,7 @@ public final class FolderBrowser {
 
             var isDir: ObjCBool = false
             if fm.fileExists(atPath: url.path, isDirectory: &isDir) && isDir.boolValue {
-                let isProtected = protectedNames.contains(name) || systemProtectedRoots.contains(url.path)
+                let isProtected = SafetyGuard.shared.isProtectedPath(url)
                 let countText = isProtected ? "(protected)" : countOrganizableFiles(in: url)
                 results.append(FolderItem(name: name, url: url, isProtected: isProtected, fileCountText: countText))
             }
@@ -150,18 +162,26 @@ public final class FolderBrowser {
         return results.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
+    private static func printLine(_ text: String = "") {
+        print(text, terminator: "")
+        Terminal.clearToEndOfLine()
+        print()
+    }
+
     private static func render(currentURL: URL, items: [FolderItem], selectedIndex: Int) {
-        Terminal.clearScreen()
         Terminal.moveTo(row: 1, col: 1)
 
-        print("🐭 \(ANSI.bold)KRAM — Browse Folders\(ANSI.reset)")
-        print(UI.divider)
-        print("  📍 \(ANSI.cyan)\(UI.formatDisplayPath(currentURL))\(ANSI.reset)")
-        print(UI.divider)
-        print()
+        printLine("🐭 \(ANSI.bold)KRAM — Browse Folders\(ANSI.reset)")
+        printLine(UI.divider)
+        printLine("  📍 \(ANSI.cyan)\(UI.formatDisplayPath(currentURL))\(ANSI.reset)")
+        printLine(UI.divider)
+        printLine()
 
         if items.isEmpty {
-            print("  \(ANSI.gray)(No accessible subfolders)\(ANSI.reset)")
+            printLine("  \(ANSI.gray)(No accessible subfolders)\(ANSI.reset)")
+            for _ in 0..<11 {
+                printLine()
+            }
         } else {
             let maxVisible = 12
             let startIndex = max(0, min(selectedIndex - maxVisible / 2, items.count - maxVisible))
@@ -175,19 +195,27 @@ public final class FolderBrowser {
                 let namePadded = item.name.padding(toLength: 30, withPad: " ", startingAt: 0)
 
                 if item.isProtected {
-                    print("  \(pointer) \(icon) \(ANSI.gray)\(namePadded) (protected)\(ANSI.reset)")
+                    printLine("  \(pointer) \(icon) \(ANSI.gray)\(namePadded) (protected)\(ANSI.reset)")
                 } else if isSelected {
-                    print("  \(ANSI.bold)\(ANSI.cyan)\(pointer) \(icon) \(namePadded)\(ANSI.reset) \(ANSI.gray)\(item.fileCountText)\(ANSI.reset)")
+                    printLine("  \(ANSI.bold)\(ANSI.cyan)\(pointer) \(icon) \(namePadded)\(ANSI.reset) \(ANSI.gray)\(item.fileCountText)\(ANSI.reset)")
                 } else {
-                    print("    \(icon) \(namePadded) \(ANSI.gray)\(item.fileCountText)\(ANSI.reset)")
+                    printLine("    \(icon) \(namePadded) \(ANSI.gray)\(item.fileCountText)\(ANSI.reset)")
+                }
+            }
+
+            let renderedCount = endIndex - startIndex
+            if renderedCount < maxVisible {
+                for _ in renderedCount..<maxVisible {
+                    printLine()
                 }
             }
         }
 
-        print()
-        print(UI.divider)
-        print("  \(ANSI.gray)↑↓ navigate · → enter folder · ← go back\(ANSI.reset)")
-        print("  \(ANSI.gray)Enter select highlighted · q cancel\(ANSI.reset)\n")
+        printLine()
+        printLine(UI.divider)
+        printLine("  \(ANSI.gray)↑↓ navigate · → enter folder · ← go back\(ANSI.reset)")
+        printLine("  \(ANSI.gray)Enter select highlighted · Esc back · q cancel\(ANSI.reset)")
+        printLine()
         fflush(stdout)
     }
 }

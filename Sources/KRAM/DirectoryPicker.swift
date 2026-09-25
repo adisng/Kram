@@ -1,6 +1,12 @@
 import Foundation
 import KRAMCore
 
+public enum PickerResult {
+    case selected(URL)
+    case back
+    case cancelled
+}
+
 public enum PickerRow {
     case quickPick(name: String, icon: String, url: URL, countText: String)
     case recent(path: String, url: URL, countText: String)
@@ -67,10 +73,16 @@ public final class DirectoryPicker {
             Terminal.restoreMode(originalTerm)
         }
 
+        Terminal.clearScreen()
+
         while true {
             render(rows: rows, selectedIndex: selectedIndex, recentsCount: validRecents.count)
 
             let key = Terminal.readKey()
+            if key == .unknown && feof(stdin) != 0 {
+                Terminal.clearScreen()
+                return nil
+            }
             switch key {
             case .up:
                 if selectedIndex > 0 { selectedIndex -= 1 }
@@ -78,8 +90,19 @@ public final class DirectoryPicker {
                 if selectedIndex < rows.count - 1 { selectedIndex += 1 }
             case .slash:
                 // Jump to type-a-path
-                Terminal.restoreMode(originalTerm)
-                return PathCompleter.promptForPath()
+                let result = PathCompleter.promptForPath()
+                switch result {
+                case .selected(let url):
+                    Terminal.clearScreen()
+                    return url
+                case .back:
+                    Terminal.clearScreen()
+                    Terminal.hideCursor()
+                    continue
+                case .cancelled:
+                    Terminal.clearScreen()
+                    return nil
+                }
             case .enter:
                 let row = rows[selectedIndex]
                 switch row {
@@ -90,11 +113,33 @@ public final class DirectoryPicker {
                     Terminal.clearScreen()
                     return url
                 case .browse:
-                    Terminal.restoreMode(originalTerm)
-                    return FolderBrowser.browse(startingAt: home)
+                    let result = FolderBrowser.browse(startingAt: home)
+                    switch result {
+                    case .selected(let url):
+                        Terminal.clearScreen()
+                        return url
+                    case .back:
+                        Terminal.clearScreen()
+                        Terminal.hideCursor()
+                        continue
+                    case .cancelled:
+                        Terminal.clearScreen()
+                        return nil
+                    }
                 case .typePath:
-                    Terminal.restoreMode(originalTerm)
-                    return PathCompleter.promptForPath()
+                    let result = PathCompleter.promptForPath()
+                    switch result {
+                    case .selected(let url):
+                        Terminal.clearScreen()
+                        return url
+                    case .back:
+                        Terminal.clearScreen()
+                        Terminal.hideCursor()
+                        continue
+                    case .cancelled:
+                        Terminal.clearScreen()
+                        return nil
+                    }
                 }
             case .quit, .escape:
                 Terminal.clearScreen()
@@ -105,14 +150,19 @@ public final class DirectoryPicker {
         }
     }
 
+    private static func printLine(_ text: String = "") {
+        print(text, terminator: "")
+        Terminal.clearToEndOfLine()
+        print()
+    }
+
     private static func render(rows: [PickerRow], selectedIndex: Int, recentsCount: Int) {
-        Terminal.clearScreen()
         Terminal.moveTo(row: 1, col: 1)
 
-        print("🐭 \(ANSI.bold)KRAM — Where do you want to organize?\(ANSI.reset)")
-        print()
-        print("  📍 \(ANSI.bold)Quick Picks\(ANSI.reset)")
-        print("  \(UI.thinDivider)")
+        printLine("🐭 \(ANSI.bold)KRAM — Where do you want to organize?\(ANSI.reset)")
+        printLine()
+        printLine("  📍 \(ANSI.bold)Quick Picks\(ANSI.reset)")
+        printLine("  \(UI.thinDivider)")
 
         var rowIndex = 0
 
@@ -125,20 +175,20 @@ public final class DirectoryPicker {
                 let nameStr = "\(icon) \(name)".padding(toLength: 18, withPad: " ", startingAt: 0)
                 let pathStr = UI.formatDisplayPath(url).padding(toLength: 22, withPad: " ", startingAt: 0)
                 if isSelected {
-                    print("  \(ANSI.bold)\(ANSI.cyan)\(pointer) \(nameStr) \(pathStr)\(ANSI.reset) \(ANSI.gray)\(countText)\(ANSI.reset)")
+                    printLine("  \(ANSI.bold)\(ANSI.cyan)\(pointer) \(nameStr) \(pathStr)\(ANSI.reset) \(ANSI.gray)\(countText)\(ANSI.reset)")
                 } else {
-                    print("    \(nameStr) \(ANSI.gray)\(pathStr) \(countText)\(ANSI.reset)")
+                    printLine("    \(nameStr) \(ANSI.gray)\(pathStr) \(countText)\(ANSI.reset)")
                 }
             }
             rowIndex += 1
         }
 
-        print()
+        printLine()
 
         // Render Recent Folders if any
         if recentsCount > 0 {
-            print("  📂 \(ANSI.bold)Recent Folders\(ANSI.reset)")
-            print("  \(UI.thinDivider)")
+            printLine("  📂 \(ANSI.bold)Recent Folders\(ANSI.reset)")
+            printLine("  \(UI.thinDivider)")
 
             for _ in 0..<recentsCount {
                 let row = rows[rowIndex]
@@ -147,14 +197,14 @@ public final class DirectoryPicker {
                 if case let .recent(path, _, countText) = row {
                     let pathStr = "📁  \(path)".padding(toLength: 42, withPad: " ", startingAt: 0)
                     if isSelected {
-                        print("  \(ANSI.bold)\(ANSI.cyan)\(pointer) \(pathStr)\(ANSI.reset) \(ANSI.gray)\(countText)\(ANSI.reset)")
+                        printLine("  \(ANSI.bold)\(ANSI.cyan)\(pointer) \(pathStr)\(ANSI.reset) \(ANSI.gray)\(countText)\(ANSI.reset)")
                     } else {
-                        print("    \(ANSI.gray)\(pathStr) \(countText)\(ANSI.reset)")
+                        printLine("    \(ANSI.gray)\(pathStr) \(countText)\(ANSI.reset)")
                     }
                 }
                 rowIndex += 1
             }
-            print()
+            printLine()
         }
 
         // Render Browse and Type Path
@@ -167,16 +217,16 @@ public final class DirectoryPicker {
             case .browse:
                 let line = "🔍 Browse...             (open folder picker)"
                 if isSelected {
-                    print("  \(ANSI.bold)\(ANSI.cyan)\(pointer) \(line)\(ANSI.reset)")
+                    printLine("  \(ANSI.bold)\(ANSI.cyan)\(pointer) \(line)\(ANSI.reset)")
                 } else {
-                    print("    \(line)")
+                    printLine("    \(line)")
                 }
             case .typePath:
                 let line = "✏️   Type a path...       (enter manually)"
                 if isSelected {
-                    print("  \(ANSI.bold)\(ANSI.cyan)\(pointer) \(line)\(ANSI.reset)")
+                    printLine("  \(ANSI.bold)\(ANSI.cyan)\(pointer) \(line)\(ANSI.reset)")
                 } else {
-                    print("    \(line)")
+                    printLine("    \(line)")
                 }
             default:
                 break
@@ -184,9 +234,10 @@ public final class DirectoryPicker {
             rowIndex += 1
         }
 
-        print()
-        print(UI.thinDivider)
-        print("  \(ANSI.gray)↑↓ navigate · Enter select · / search · q quit\(ANSI.reset)\n")
+        printLine()
+        printLine(UI.thinDivider)
+        printLine("  \(ANSI.gray)↑↓ navigate · Enter select · / search · q quit\(ANSI.reset)")
+        printLine()
         fflush(stdout)
     }
 }

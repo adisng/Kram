@@ -38,6 +38,14 @@ public final class SafetyGuard {
         ]
     }
 
+    // MARK: - Path Protection Query
+
+    public func isProtectedPath(_ url: URL) -> Bool {
+        let path = url.standardizedFileURL.path
+        return systemProtectedPaths.contains(where: { path == $0 || path.hasPrefix($0 + "/") })
+            || userProtectedPaths().contains(where: { path == $0 || path.hasPrefix($0 + "/") })
+    }
+
     // MARK: - Public Validation Entry Point
 
     /// Validates that a source → destination move is safe within the given boundary.

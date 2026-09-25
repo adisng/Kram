@@ -51,7 +51,7 @@ if parsed.showHelp {
 }
 
 if parsed.showVersion {
-    print("kram 1.0.0")
+    print("kram 1.5.0")
     exit(0)
 }
 

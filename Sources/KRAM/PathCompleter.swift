@@ -3,12 +3,14 @@ import KRAMCore
 
 public final class PathCompleter {
 
-    public static func promptForPath() -> URL? {
+    public static func promptForPath() -> PickerResult {
         let originalTerm = Terminal.enableRawMode()
         Terminal.showCursor()
         defer {
             Terminal.restoreMode(originalTerm)
         }
+
+        Terminal.clearScreen()
 
         var input = "~/"
         var suggestions: [String] = []
@@ -18,6 +20,10 @@ public final class PathCompleter {
             render(input: input, suggestions: suggestions)
 
             let key = Terminal.readKey()
+            if key == .unknown && feof(stdin) != 0 {
+                Terminal.clearScreen()
+                return .cancelled
+            }
             switch key {
             case .enter:
                 let expanded = (input as NSString).expandingTildeInPath
@@ -25,14 +31,14 @@ public final class PathCompleter {
                 var isDir: ObjCBool = false
                 if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir) && isDir.boolValue {
                     Terminal.clearScreen()
-                    return url
+                    return .selected(url)
                 } else if !suggestions.isEmpty {
                     // Try the top suggestion if current input is partial
                     let top = (suggestions[0] as NSString).expandingTildeInPath
                     let topURL = URL(fileURLWithPath: top).standardizedFileURL
                     if FileManager.default.fileExists(atPath: topURL.path, isDirectory: &isDir) && isDir.boolValue {
                         Terminal.clearScreen()
-                        return topURL
+                        return .selected(topURL)
                     }
                 }
             case .tab:
@@ -45,14 +51,14 @@ public final class PathCompleter {
                 }
             case .escape:
                 Terminal.clearScreen()
-                return nil
+                return .back
             case .character(let c):
                 input.append(c)
             case .quit:
                 // Only treat q as quit if input is empty
                 if input.isEmpty {
                     Terminal.clearScreen()
-                    return nil
+                    return .cancelled
                 } else {
                     input.append("q")
                 }
@@ -62,30 +68,44 @@ public final class PathCompleter {
         }
     }
 
+    private static func printLine(_ text: String = "") {
+        print(text, terminator: "")
+        Terminal.clearToEndOfLine()
+        print()
+    }
+
     private static func render(input: String, suggestions: [String]) {
-        Terminal.clearScreen()
         Terminal.moveTo(row: 1, col: 1)
 
-        print("🐭 \(ANSI.bold)KRAM — Enter folder path\(ANSI.reset)")
-        print(UI.divider)
-        print()
-        print("  Path: \(ANSI.cyan)\(input)\(ANSI.reset)█")
-        print()
+        printLine("🐭 \(ANSI.bold)KRAM — Enter folder path\(ANSI.reset)")
+        printLine(UI.divider)
+        printLine()
+        printLine("  Path: \(ANSI.cyan)\(input)\(ANSI.reset)█")
+        printLine()
 
         if !suggestions.isEmpty {
-            print("  \(ANSI.bold)Suggestions:\(ANSI.reset)")
+            printLine("  \(ANSI.bold)Suggestions:\(ANSI.reset)")
+            let count = min(suggestions.count, 4)
             for (idx, suggestion) in suggestions.prefix(4).enumerated() {
                 let pointer = idx == 0 ? "❯" : " "
                 let color = idx == 0 ? ANSI.cyan : ANSI.gray
-                print("  \(color)\(pointer) \(suggestion)\(ANSI.reset)")
+                printLine("  \(color)\(pointer) \(suggestion)\(ANSI.reset)")
             }
-            print()
+            if count < 4 {
+                for _ in count..<4 {
+                    printLine()
+                }
+            }
+            printLine()
         } else {
-            print("\n\n")
+            for _ in 0..<6 {
+                printLine()
+            }
         }
 
-        print(UI.thinDivider)
-        print("  \(ANSI.gray)Tab to complete · Enter confirm · Esc cancel\(ANSI.reset)\n")
+        printLine(UI.thinDivider)
+        printLine("  \(ANSI.gray)Tab to complete · Enter confirm · Esc back · q cancel\(ANSI.reset)")
+        printLine()
         fflush(stdout)
     }
 
