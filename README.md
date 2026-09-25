@@ -30,7 +30,13 @@
 
 KRAM requires macOS 13.0 or newer and Swift 5.9+.
 
-**Install via script**
+**Install via Homebrew**
+
+```bash
+brew install adisng/tap/kram
+```
+
+**Or via script**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/adisng/Kram/main/install.sh | bash
