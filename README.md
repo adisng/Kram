@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>🐭 KRAM · क्रम</h1>
+  <h1> KRAM · क्रम</h1>
   <p><em><strong>Krama</strong> (क्रम) — Sanskrit for order, sequence, and systematic arrangement.</em></p>
   <p><em>Keep. Rearrange. Automate. Manage. — the ultra-fast, zero-dependency, native Swift file organizer for macOS.</em></p>
 </div>
