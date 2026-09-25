@@ -29,6 +29,10 @@ public final class TransactionManager {
         let data = try encoder.encode(transaction)
         let file = transactionsDir.appendingPathComponent("\(transaction.id.uuidString).json")
         try data.write(to: file)
+
+        // Update stats and recents after successful transaction
+        StatsManager.shared.record(transaction: transaction)
+        RecentsManager.shared.add(path: transaction.rootDirectory)
     }
 
     // MARK: - Load Latest
@@ -101,12 +105,14 @@ public final class TransactionManager {
                 emptyDirs.insert(op.destinationURL.deletingLastPathComponent())
 
                 if verbose {
-                    print("\(ANSI.green)  ✓\(ANSI.reset)  \(op.destinationURL.lastPathComponent) ← \(op.category)/")
+                    let padded = op.destinationURL.lastPathComponent.padding(toLength: 30, withPad: " ", startingAt: 0)
+                    print("  \(ANSI.green)✓\(ANSI.reset)  \(padded)←  \(op.category)/")
                 }
 
             } catch {
                 if verbose {
-                    print("\(ANSI.red)  ✗\(ANSI.reset)  \(op.destinationURL.lastPathComponent): \(error.localizedDescription)")
+                    let padded = op.destinationURL.lastPathComponent.padding(toLength: 30, withPad: " ", startingAt: 0)
+                    print("  \(ANSI.red)✗\(ANSI.reset)  \(padded)←  \(error.localizedDescription)")
                 }
             }
         }

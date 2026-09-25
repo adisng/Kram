@@ -1,219 +1,204 @@
 import Foundation
 import KRAMCore
 
-// MARK: - Version
+func getSkippedFiles(in dir: URL, recursive: Bool) -> [SkippedFileInfo] {
+    let fm = FileManager.default
+    var skipped: [SkippedFileInfo] = []
+    let categoryNames: Set<String> = Set(FileCategory.allCases.map { $0.rawValue })
 
-let KRAM_VERSION = "1.0.0"
+    guard let contents = try? fm.contentsOfDirectory(
+        at: dir,
+        includingPropertiesForKeys: [.isHiddenKey, .isDirectoryKey],
+        options: []
+    ) else {
+        return []
+    }
 
-// MARK: - Help
+    for item in contents {
+        let name = item.lastPathComponent
+        let vals = try? item.resourceValues(forKeys: [.isHiddenKey, .isDirectoryKey])
+        let isDir = vals?.isDirectory ?? false
+        let isHidden = vals?.isHidden ?? false || name.hasPrefix(".")
 
-func printHelp() {
-    print("""
-\(ANSI.bold)KRAM \(KRAM_VERSION) — Keep. Rearrange. Automate. Manage.\(ANSI.reset)
-
-\(ANSI.bold)USAGE:\(ANSI.reset)
-  kram <directory>                    Dry-run: preview what would change
-  kram <directory> --apply            Apply changes (asks for confirmation)
-  kram <directory> --recursive        Include subdirectories
-  kram <directory> --undo             Reverse the last transaction
-  kram <directory> --verbose          Show all files including skipped
-  kram --version                      Show version
-  kram --help                         Show this help
-
-\(ANSI.bold)EXAMPLES:\(ANSI.reset)
-  kram ~/Downloads
-  kram ~/Downloads --apply
-  kram ~/Downloads --apply --recursive
-  kram ~/Downloads --undo
-
-\(ANSI.bold)SAFETY:\(ANSI.reset)
-  KRAM only modifies files inside the directory you give it.
-  It never touches system files, hidden files, or files outside the boundary.
-  Dry-run is always the default. Use --apply to make real changes.
-  Every applied change can be undone with --undo.
-""")
-}
-
-// MARK: - Parse Arguments
-
-var args = CommandLine.arguments.dropFirst() // drop executable name
-var targetPath: String? = nil
-var applyFlag     = false
-var recursiveFlag = false
-var undoFlag      = false
-var verboseFlag   = false
-
-for arg in args {
-    switch arg {
-    case "--apply":     applyFlag = true
-    case "--recursive": recursiveFlag = true
-    case "--undo":      undoFlag = true
-    case "--verbose":   verboseFlag = true
-    case "--version":
-        print("kram \(KRAM_VERSION)")
-        exit(0)
-    case "--help", "-h":
-        printHelp()
-        exit(0)
-    default:
-        if arg.hasPrefix("--") {
-            print("\(ANSI.red)Unknown flag: \(arg)\(ANSI.reset)")
-            printHelp()
-            exit(1)
-        } else {
-            targetPath = arg
+        if isHidden {
+            skipped.append(SkippedFileInfo(name: name, reason: "hidden file"))
+        } else if isDir && categoryNames.contains(name) {
+            if let innerFiles = try? fm.contentsOfDirectory(at: item, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) {
+                for inner in innerFiles {
+                    skipped.append(SkippedFileInfo(name: inner.lastPathComponent, reason: "already in \(name)/"))
+                }
+            }
         }
     }
+    return skipped
 }
 
-guard let rawPath = targetPath else {
-    print("\(ANSI.red)Error: No directory specified.\(ANSI.reset)")
-    printHelp()
+// MARK: - Main Execution
+
+let rawArgs = Array(CommandLine.arguments.dropFirst())
+var parsed = ArgumentParser.parse(rawArgs)
+
+// 1. Unknown command handling
+if let unknown = parsed.unknownCommand {
+    UI.printUnknownCommand(unknown)
     exit(1)
 }
 
-// MARK: - Resolve Directory
+// 2. Help and Version
+if parsed.showHelp {
+    UI.printHelp()
+    exit(0)
+}
 
-let fm = FileManager.default
-let expandedPath = (rawPath as NSString).expandingTildeInPath
-let targetURL = URL(fileURLWithPath: expandedPath).standardizedFileURL
+if parsed.showVersion {
+    print("kram 1.0.0")
+    exit(0)
+}
 
-// MARK: - Undo Mode
+// 3. Stats and Last Transaction
+if parsed.showStats {
+    let stats = StatsManager.shared.load()
+    UI.printStats(stats)
+    exit(0)
+}
 
-if undoFlag {
-    let divider = String(repeating: "━", count: 42)
-    print("\n\(ANSI.bold)KRAM — Undo\(ANSI.reset)")
-    print(divider)
+if parsed.showLast {
+    let tx = try? TransactionManager().loadLatest()
+    UI.printLastTransaction(tx)
+    exit(0)
+}
 
+// 4. Conflicting flags (-n and -a)
+if parsed.conflictingFlags {
+    UI.printFlagConflict()
+}
+
+// 5. Undo mode
+if parsed.undo {
     let txManager = TransactionManager()
+    guard let latest = try? txManager.loadLatest() else {
+        UI.printWarning("No transaction found to undo.")
+        exit(0)
+    }
+
+    let boundary = parsed.targetURL ?? latest.rootDirectory
+    UI.printUndoHeader(appliedAt: latest.appliedAt, count: latest.operations.count)
+
     do {
-        let count = try txManager.undo(boundary: targetURL, verbose: true)
-        print(divider)
-        if count > 0 {
-            print("\(ANSI.green)Undo complete. \(count) file(s) restored.\(ANSI.reset)\n")
-        } else {
-            print("\(ANSI.yellow)Nothing to restore.\(ANSI.reset)\n")
-        }
+        let count = try txManager.undo(boundary: boundary, verbose: true)
+        UI.printUndoSummary(restoredCount: count)
     } catch KRAMError.noTransactionToUndo {
-        print("\(ANSI.yellow)No transaction found for this directory.\(ANSI.reset)\n")
+        UI.printWarning("No transaction found for this directory.")
         exit(0)
     } catch {
-        print("\(ANSI.red)Undo failed: \(error.localizedDescription)\(ANSI.reset)\n")
+        UI.printError("Undo failed: \(error.localizedDescription)")
         exit(1)
     }
     exit(0)
 }
 
-// MARK: - Scan
+// 6. Interactive Mode when no arguments are provided
+if CommandLine.arguments.count == 1 {
+    if let picked = DirectoryPicker.pickDirectory() {
+        parsed.targetURL = picked
+        parsed.dryRun = true
+    } else {
+        exit(0)
+    }
+}
 
-let scanner    = FileScanner()
-let planner    = OperationPlanner()
-let divider    = String(repeating: "━", count: 42)
+// 7. Verify Target Directory
+guard let targetURL = parsed.targetURL else {
+    UI.printError("Error: No directory specified.")
+    UI.printHelp()
+    exit(1)
+}
+
+var isDir: ObjCBool = false
+guard FileManager.default.fileExists(atPath: targetURL.path, isDirectory: &isDir), isDir.boolValue else {
+    UI.printError("Not a directory: \(targetURL.path)")
+    exit(1)
+}
+
+// 8. Scan Directory
+let scanner = FileScanner()
+let planner = OperationPlanner()
 
 var files: [ScannedFile]
 do {
-    files = try scanner.scan(directory: targetURL, recursive: recursiveFlag)
+    files = try scanner.scan(directory: targetURL, recursive: parsed.recursive)
 } catch {
-    print("\(ANSI.red)Error: \(error.localizedDescription)\(ANSI.reset)")
+    UI.printError("Error: \(error.localizedDescription)")
     exit(1)
 }
 
 let operations = planner.plan(files: files, boundary: targetURL)
+let skipped = getSkippedFiles(in: targetURL, recursive: parsed.recursive)
 
-// MARK: - Preview
-
-let displayPath = rawPath.hasPrefix(fm.homeDirectoryForCurrentUser.path)
-    ? rawPath.replacingOccurrences(of: fm.homeDirectoryForCurrentUser.path, with: "~")
-    : rawPath
-
-print()
-if applyFlag {
-    print("\(ANSI.bold)KRAM — Ready to Apply\(ANSI.reset)")
-} else {
-    print("\(ANSI.bold)KRAM — Dry Run Preview\(ANSI.reset)")
+// 9. Dry Run Preview (Default)
+if !parsed.apply || parsed.dryRun {
+    UI.printDryRunPreview(
+        targetURL: targetURL,
+        scannedCount: files.count,
+        operations: operations,
+        skippedFiles: skipped,
+        isVerbose: parsed.verbose,
+        isCurrentDir: parsed.isCurrentDir
+    )
+    exit(0)
 }
-print(divider)
-print("Directory:  \(ANSI.cyan)\(displayPath)\(ANSI.reset)")
-print("Files:      \(files.count) scanned, \(operations.count) to move")
-if recursiveFlag { print("Mode:       recursive") }
-print(divider)
-print()
 
-// Group by category for display
-var grouped: [String: [PlannedOperation]] = [:]
+// 10. Apply Changes
+if operations.isEmpty {
+    UI.printDryRunPreview(
+        targetURL: targetURL,
+        scannedCount: files.count,
+        operations: operations,
+        skippedFiles: skipped,
+        isVerbose: parsed.verbose,
+        isCurrentDir: parsed.isCurrentDir
+    )
+    exit(0)
+}
+
+let confirmed = UI.promptApplyConfirmation(targetURL: targetURL, count: operations.count)
+guard confirmed else {
+    exit(0)
+}
+
+UI.printLiveMoveHeader()
+let mover = FileMover()
+var succeededOps: [PlannedOperation] = []
+var skippedCount = 0
+var failedCount = 0
+
 for op in operations {
-    grouped[op.category, default: []].append(op)
-}
-
-for category in FileCategory.allCases {
-    guard let ops = grouped[category.rawValue], !ops.isEmpty else { continue }
-    print("  \(category.icon)  \(ANSI.bold)\(category.rawValue)/\(ANSI.reset)")
-    for op in ops {
-        let dest = op.destinationURL.lastPathComponent
-        let src  = op.sourceURL.lastPathComponent
-        if dest == src {
-            print("      \(ANSI.gray)\(src)\(ANSI.reset)")
+    let result = mover.apply(operations: [op], boundary: targetURL, verbose: false)
+    if let succ = result.succeeded.first {
+        succeededOps.append(succ)
+        UI.printMoveSuccess(sourceName: succ.sourceURL.lastPathComponent, category: succ.category)
+    } else if let (_, err) = result.skipped.first {
+        if err is SafetyViolation {
+            failedCount += 1
+            UI.printMoveFailure(sourceName: op.sourceURL.lastPathComponent, reason: "safety violation")
         } else {
-            print("      \(dest)  \(ANSI.gray)← \(src)\(ANSI.reset)")
+            skippedCount += 1
+            UI.printMoveWarning(sourceName: op.sourceURL.lastPathComponent, reason: err.localizedDescription)
         }
     }
-    print()
 }
 
-if operations.isEmpty {
-    print("  \(ANSI.gray)Nothing to organize. Everything looks good.\(ANSI.reset)\n")
-    exit(0)
-}
-
-print(divider)
-
-// MARK: - Dry Run Exit
-
-if !applyFlag {
-    print("\(ANSI.gray)Run with \(ANSI.reset)\(ANSI.bold)--apply\(ANSI.reset)\(ANSI.gray) to execute these changes.\(ANSI.reset)\n")
-    exit(0)
-}
-
-// MARK: - Confirmation
-
-print("\(ANSI.bold)\(operations.count) file(s) will be moved inside \(displayPath)\(ANSI.reset)")
-print("This can be undone with: \(ANSI.cyan)kram \(displayPath) --undo\(ANSI.reset)")
-print()
-print("Proceed? [y/N]: ", terminator: "")
-
-guard let answer = readLine(), answer.lowercased() == "y" else {
-    print("\(ANSI.gray)Cancelled.\(ANSI.reset)\n")
-    exit(0)
-}
-
-// MARK: - Apply
-
-print()
-let mover = FileMover()
-let result = mover.apply(operations: operations, boundary: targetURL, verbose: true)
-
-// MARK: - Record Transaction
-
-if !result.succeeded.isEmpty {
-    let transaction = Transaction(
-        rootDirectory: targetURL,
-        operations: result.succeeded
-    )
+if !succeededOps.isEmpty {
+    let transaction = Transaction(rootDirectory: targetURL, operations: succeededOps)
     let txManager = TransactionManager()
     try? txManager.save(transaction: transaction)
 }
 
-// MARK: - Summary
+UI.printMoveSummary(
+    targetURL: targetURL,
+    succeededCount: succeededOps.count,
+    skippedCount: skippedCount,
+    failedCount: failedCount
+)
 
-print()
-print(divider)
-let skippedCount = result.skipped.count
-print("\(ANSI.green)\(ANSI.bold)Done.\(ANSI.reset) \(result.succeeded.count) moved", terminator: "")
-if skippedCount > 0 {
-    print(", \(ANSI.yellow)\(skippedCount) skipped\(ANSI.reset)", terminator: "")
-}
-print()
-if !result.succeeded.isEmpty {
-    print("To undo: \(ANSI.cyan)kram \(displayPath) --undo\(ANSI.reset)")
-}
-print()
+exit(0)
