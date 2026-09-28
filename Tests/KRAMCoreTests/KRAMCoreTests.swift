@@ -559,4 +559,18 @@ struct KRAMCoreTests {
         #expect(result.succeeded.isEmpty)
         #expect(result.skipped.contains { $0.1 is SafetyViolation })
     }
+
+    @Test("Scanner skips partial downloads and recent files")
+    func testScannerSkipsPartialAndRecentFiles() throws {
+        let root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".kram-partial-test-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try Data().write(to: root.appendingPathComponent("file.crdownload"))
+        try Data().write(to: root.appendingPathComponent("file.txt"))
+        let old = root.appendingPathComponent("old.txt")
+        try Data().write(to: old)
+        try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -20)], ofItemAtPath: old.path)
+        let files = try FileScanner(classifier: ExtensionClassifier(), recentFileThreshold: 5).scan(directory: root)
+        #expect(files.map(\.name) == ["old.txt"])
+    }
 }

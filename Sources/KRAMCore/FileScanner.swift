@@ -7,11 +7,15 @@ public final class FileScanner {
 
     private let classifier: FileClassifier
     private let config: KRAMConfig
+    private let recentFileThreshold: TimeInterval
+    private let requireStableFiles: Bool
     private let fm = FileManager.default
 
-    public init(classifier: FileClassifier = ClassifierFactory.makeDefault(), config: KRAMConfig = ConfigurationManager().load()) {
+    public init(classifier: FileClassifier = ClassifierFactory.makeDefault(), config: KRAMConfig = ConfigurationManager().load(), recentFileThreshold: TimeInterval = 5, requireStableFiles: Bool = false) {
         self.classifier = classifier
         self.config = config
+        self.recentFileThreshold = recentFileThreshold
+        self.requireStableFiles = requireStableFiles
     }
 
     // MARK: - Known Category Folder Names
@@ -43,7 +47,7 @@ public final class FileScanner {
     private func scanFlat(directory: URL) throws -> [ScannedFile] {
         let contents = try fm.contentsOfDirectory(
             at: directory,
-            includingPropertiesForKeys: [.isHiddenKey, .isSymbolicLinkKey, .isDirectoryKey],
+            includingPropertiesForKeys: [.isHiddenKey, .isSymbolicLinkKey, .isDirectoryKey, .fileSizeKey, .contentModificationDateKey],
             options: []
         )
 
@@ -61,7 +65,7 @@ public final class FileScanner {
     private func scanRecursive(directory: URL) throws -> [ScannedFile] {
         guard let enumerator = fm.enumerator(
             at: directory,
-            includingPropertiesForKeys: [.isHiddenKey, .isSymbolicLinkKey, .isDirectoryKey],
+            includingPropertiesForKeys: [.isHiddenKey, .isSymbolicLinkKey, .isDirectoryKey, .fileSizeKey, .contentModificationDateKey],
             options: [.skipsHiddenFiles]
         ) else {
             throw KRAMError.permissionDenied(path: directory.path)
@@ -85,7 +89,7 @@ public final class FileScanner {
 
     private func makeScannedFile(url: URL, rootDirectory: URL? = nil, skipDirectories: Bool) throws -> ScannedFile? {
         let resourceValues = try url.resourceValues(
-            forKeys: [.isHiddenKey, .isSymbolicLinkKey, .isDirectoryKey]
+            forKeys: [.isHiddenKey, .isSymbolicLinkKey, .isDirectoryKey, .fileSizeKey, .contentModificationDateKey]
         )
 
         let isHidden    = resourceValues.isHidden ?? false
@@ -94,6 +98,11 @@ public final class FileScanner {
 
         // Skip hidden files
         if isHidden || url.lastPathComponent.hasPrefix(".") { return nil }
+
+        let ext = url.pathExtension.lowercased()
+        let partialExtensions: Set<String> = ["crdownload", "part", "download", "partial", "tmp", "opdownload"]
+        if partialExtensions.contains(ext) { return nil }
+        if isDirectory && url.lastPathComponent.lowercased().hasSuffix(".download") { return nil }
 
         // Skip directories in flat mode
         if skipDirectories && isDirectory { return nil }
@@ -111,9 +120,12 @@ public final class FileScanner {
             if categoryFolderNames.contains(parentFolderName) { return nil }
         }
 
+        if let modified = resourceValues.contentModificationDate,
+           Date().timeIntervalSince(modified) < recentFileThreshold { return nil }
+        if requireStableFiles && !isStable(url: url, initial: resourceValues) { return nil }
+
         let name = url.lastPathComponent
         if config.skipPatterns.contains(where: { Self.globMatches($0, name: name) }) { return nil }
-        let ext  = url.pathExtension.lowercased()
 
         // Build a temporary ScannedFile with .other to classify
         let temp = ScannedFile(url: url, name: name, ext: ext,
@@ -125,6 +137,12 @@ public final class FileScanner {
         return ScannedFile(url: url, name: name, ext: ext,
                            isHidden: isHidden, isSymlink: isSymlink,
                            category: category)
+    }
+
+    private func isStable(url: URL, initial: URLResourceValues) -> Bool {
+        Thread.sleep(forTimeInterval: 0.05)
+        guard let current = try? url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDate]) else { return false }
+        return current.fileSize == initial.fileSize && current.contentModificationDate == initial.contentModificationDate
     }
 
     private static func globMatches(_ pattern: String, name: String) -> Bool {
