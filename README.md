@@ -28,7 +28,8 @@ Version 2.0 introduces a richer terminal folder picker with navigation history, 
 
 ## Features
 
-- **Interactive folder picker**: Run `kr` with zero arguments for an in-place terminal directory browser with quick picks, recent folders, and Tab path auto-completion
+- **Interactive folder picker**: Run `kr` with zero arguments for an in-place terminal directory browser with quick picks, recent folders, manual path completion, and back/forward navigation history
+- **Smart local classification**: Use `--smart` to classify otherwise unknown files with the bundled offline CoreML model; extension-based classification remains the fast default
 - **Ironclad safety boundary**: Hard-blocks system roots, user-protected dotfiles, symlink escapes, and path traversal with zero override mechanism
 - **True transactional undo**: Every sorting run is recorded in an immutable journal, fully reversible in milliseconds with automatic cleanup of empty category directories
 - **Safe by default**: Always previews first, then asks before organizing — one command does the full flow; use `--dry-run` for preview-only or `--yes` to skip confirmation
@@ -65,6 +66,7 @@ kr here                      # Preview current working directory
 kr <directory>               # Preview any folder, then ask to organize
 kr <directory> --recursive   # Include subdirectories
 kr <directory> --verbose     # Show skipped files and reasons
+kr <directory> --smart       # Use local smart classification for unknown file types
 kr undo                      # Reverse the last organize
 kr last                      # Show the last transaction
 kr stats                     # Show lifetime statistics
@@ -98,6 +100,8 @@ kr completion fish | source
 ```
 
 Shorthand flags (`-a`, `-r`, `-v`, `-u`, `-n` and combined forms like `-arv`) are also supported for backward compatibility.
+
+`--smart` is intentionally opt-in. KRAM first uses the deterministic extension classifier, then uses the bundled local model only for files that would otherwise be placed in `Other`. No file contents leave your Mac.
 
 <details>
 <summary><strong>Other install options</strong></summary>
@@ -300,8 +304,9 @@ Selecting **Browse...** opens an in-place folder browser scoped to your home dir
     🔒 Library                        (protected)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  ↑↓ navigate · → enter folder · ← go back
-  Enter select highlighted · Esc back · q cancel
+  ↑↓/j k navigate · →/l open · ←/b back · f forward
+  Enter select highlighted · Space select current · h home · r refresh
+  Esc return to menu · q cancel
 ```
 
 ### Lifetime Stats
