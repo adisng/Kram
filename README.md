@@ -169,8 +169,8 @@ kr dl
 🐭 KRAM — Dry Run Preview
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Directory:   ~/Downloads
-Scanned:     8 files
-To move:     8 files
+Scanned:     10 files
+To move:     10 files
 Skipped:     0 files
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -184,6 +184,9 @@ Skipped:     0 files
 ➤ 🗜  Archives                       1 file
     project.zip                   ← project.zip
 
+➤ 📦 Installers                     1 file
+    app.dmg                       ← app.dmg
+
 ➤ 🎵 Audio                           1 file
     song.mp3                      ← song.mp3
 
@@ -193,6 +196,9 @@ Skipped:     0 files
 ➤ 📊 Spreadsheets                   1 file
     data.csv                      ← data.csv
 
+➤ 🗃  Data                          1 file
+    config.json                   ← config.json
+
 ➤ 💻 Code                            1 file
     script.py                     ← script.py
 
@@ -200,7 +206,7 @@ Skipped:     0 files
 
 🐭 KRAM — Ready to Apply
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  8 files will be moved inside ~/Downloads
+  10 files will be moved inside ~/Downloads
   Undo anytime:  kr undo
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -216,6 +222,8 @@ Proceed? [y/N]: y
   ✓  video.mp4                     →  Videos/
   ✓  data.csv                      →  Spreadsheets/
   ✓  script.py                     →  Code/
+  ✓  app.dmg                       →  Installers/
+  ✓  config.json                   →  Data/
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✓ Done   8 moved · 0 skipped · 0 failed
@@ -248,16 +256,18 @@ kr undo
 🐭 KRAM — Undo
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Transaction:   26 Sep 2026 · 12:33 AM
-Files:         8 to restore
+Files:         10 to restore
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   ✓  resume.pdf                    ←  Documents/
   ✓  notes.docx                    ←  Documents/
   ✓  photo.jpg                     ←  Images/
   ✓  project.zip                   ←  Archives/
+  ✓  app.dmg                       ←  Installers/
   ✓  song.mp3                      ←  Audio/
   ✓  video.mp4                     ←  Videos/
   ✓  data.csv                      ←  Spreadsheets/
+  ✓  config.json                   ←  Data/
   ✓  script.py                     ←  Code/
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

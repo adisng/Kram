@@ -15,11 +15,23 @@ public enum WatchMode {
 
         let watcher = DirectoryWatcher(directory: directory)
 
-        // SIGINT → clean stop
-        setupSIGINT(watcher: watcher, displayPath: displayPath)
+        let signalSource = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
+        signal(SIGINT, SIG_IGN)
+        signalSource.setEventHandler {
+            watcher.stop()
+            print("\n\(ANSI.gray)Stopped watching \(displayPath).\(ANSI.reset)")
+            exit(0)
+        }
+        signalSource.resume()
 
-        watcher.start {
+        do {
+            try watcher.start {
             organizeOnce(directory: directory, displayPath: displayPath)
+            }
+        } catch {
+            signalSource.cancel()
+            UI.printError("Unable to watch \(displayPath): \(error.localizedDescription)")
+            return
         }
 
         // Block the main thread with a run loop so Ctrl-C signals are delivered
@@ -58,27 +70,4 @@ public enum WatchMode {
         UI.printWatchBatch(succeededOps: succeededOps, timestamp: Date())
     }
 
-    // MARK: - SIGINT Handler
-
-    private static func setupSIGINT(watcher: DirectoryWatcher, displayPath: String) {
-        // Store refs in globals so the C-level signal handler can reach them
-        WatchModeGlobals.watcher     = watcher
-        WatchModeGlobals.displayPath = displayPath
-
-        signal(SIGINT) { _ in
-            WatchModeGlobals.watcher?.stop()
-            let path = WatchModeGlobals.displayPath ?? "directory"
-            print("\n\(ANSI.gray)Stopped watching \(path).\(ANSI.reset)")
-            exit(0)
-        }
-    }
-}
-
-// MARK: - Signal Handler Globals
-
-/// Plain globals are necessary because the signal handler must be a C function
-/// (no captures allowed). Storing state here is the standard Swift idiom.
-private enum WatchModeGlobals {
-    static var watcher:     DirectoryWatcher?
-    static var displayPath: String?
 }

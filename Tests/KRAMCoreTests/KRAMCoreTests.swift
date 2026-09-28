@@ -248,7 +248,7 @@ struct KRAMCoreTests {
         var callbackCount = 0
         let callbackLock = NSLock()
 
-        watcher.start {
+        try watcher.start {
             callbackLock.lock()
             callbackCount += 1
             callbackLock.unlock()
@@ -295,7 +295,7 @@ struct KRAMCoreTests {
         var callbackCount = 0
         let callbackLock = NSLock()
 
-        watcher.start {
+        try watcher.start {
             callbackLock.lock()
             callbackCount += 1
             callbackLock.unlock()

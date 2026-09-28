@@ -33,9 +33,8 @@ public final class DirectoryWatcher {
     /// Starts watching. `onChange` is called on a background queue after the
     /// debounce window elapses with no further events.
     /// Must be called from the main thread (or a thread with a run loop).
-    public func start(onChange: @escaping () -> Void) {
+    public func start(onChange: @escaping () -> Void) throws {
         guard !isRunning else { return }
-        isRunning = true
         self.onChange = onChange
 
         // FSEvents C callback — must be a plain function or closure with no captures;
@@ -69,12 +68,18 @@ public final class DirectoryWatcher {
             0.1,   // latency: coarse pre-debounce window (seconds)
             flags
         ) else {
-            return
+            throw KRAMError.operationFailed(source: directory.path, reason: "Unable to create FSEvents stream")
         }
 
         self.eventStream = stream
         FSEventStreamSetDispatchQueue(stream, callbackQueue)
-        FSEventStreamStart(stream)
+        guard FSEventStreamStart(stream) else {
+            FSEventStreamInvalidate(stream)
+            FSEventStreamRelease(stream)
+            self.eventStream = nil
+            throw KRAMError.operationFailed(source: directory.path, reason: "Unable to start FSEvents stream")
+        }
+        isRunning = true
     }
 
     /// Stops the watcher and cancels any pending debounce callback.
