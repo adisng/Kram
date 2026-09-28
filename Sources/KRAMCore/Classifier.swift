@@ -85,8 +85,6 @@ public final class ExtensionClassifier: FileClassifier {
         return extensionMap[file.ext.lowercased()] ?? .other
     }
 
-    // MARK: - FUTURE: SmartClassifier hook
-    // When --smart flag is passed, instantiate SmartClassifier instead.
-    // SmartClassifier accepts ScannedFile, calls local Laya ONNX model,
-    // returns FileCategory with confidence. SafetyGuard is NEVER bypassed.
+    // LayaClassifier accepts ScannedFile, calls the bundled local CoreML model,
+    // and falls back to this classifier when inference is unavailable.
 }

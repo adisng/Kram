@@ -64,13 +64,9 @@ public final class LayaClassifier: FileClassifier {
     }
 
     public func classify(file: ScannedFile) -> FileCategory {
-        // 1. Fast deterministic check (0ms)
-        let initial = fallback.classify(file: file)
-        guard initial == .other else {
-            return initial
-        }
-
-        // 2. Read context snippet (up to 512 bytes)
+        // Always give the bundled model first say. The deterministic classifier
+        // remains the safety net when the model cannot load or is uncertain.
+        // Read a small context snippet (up to 512 bytes) for every file.
         var snippet = ""
         if let handle = try? FileHandle(forReadingFrom: file.url) {
             defer { try? handle.close() }
@@ -80,13 +76,8 @@ public final class LayaClassifier: FileClassifier {
             }
         }
 
-        // 3. In-process CoreML inference (<1ms)
         let contextText = "\(file.name) \(snippet.prefix(300))"
-        guard let category = predictCategory(for: contextText) else {
-            return .other
-        }
-
-        return category
+        return predictCategory(for: contextText) ?? fallback.classify(file: file)
     }
 
     private func extractFeatures(from text: String) -> [String] {

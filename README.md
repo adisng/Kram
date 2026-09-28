@@ -24,12 +24,12 @@
 
 ## KRAM 2.0.0
 
-Version 2.0 introduces a richer terminal folder picker with navigation history, forward/back movement, home and refresh shortcuts, and clearer selection controls. It also includes optional local smart classification with `--smart`.
+Version 2.0 introduces a richer terminal folder picker with navigation history, forward/back movement, home and refresh shortcuts, and clearer selection controls. It also includes always-on local smart classification with a deterministic fallback.
 
 ## Features
 
 - **Interactive folder picker**: Run `kr` with zero arguments for an in-place terminal directory browser with quick picks, recent folders, manual path completion, and back/forward navigation history
-- **Smart local classification**: Use `--smart` to classify otherwise unknown files with the bundled offline CoreML model; extension-based classification remains the fast default
+- **Smart local classification**: The bundled offline CoreML model participates in every classification; extension-based classification is the fallback if the model is unavailable or uncertain
 - **Ironclad safety boundary**: Hard-blocks system roots, user-protected dotfiles, symlink escapes, and path traversal with zero override mechanism
 - **True transactional undo**: Every sorting run is recorded in an immutable journal, fully reversible in milliseconds with automatic cleanup of empty category directories
 - **Safe by default**: Always previews first, then asks before organizing — one command does the full flow; use `--dry-run` for preview-only or `--yes` to skip confirmation
@@ -66,7 +66,6 @@ kr here                      # Preview current working directory
 kr <directory>               # Preview any folder, then ask to organize
 kr <directory> --recursive   # Include subdirectories
 kr <directory> --verbose     # Show skipped files and reasons
-kr <directory> --smart       # Use local smart classification for unknown file types
 kr undo                      # Reverse the last organize
 kr last                      # Show the last transaction
 kr stats                     # Show lifetime statistics
@@ -101,7 +100,7 @@ kr completion fish | source
 
 Shorthand flags (`-a`, `-r`, `-v`, `-u`, `-n` and combined forms like `-arv`) are also supported for backward compatibility.
 
-`--smart` is intentionally opt-in. KRAM first uses the deterministic extension classifier, then uses the bundled local model only for files that would otherwise be placed in `Other`. No file contents leave your Mac.
+Classification is always local and offline. KRAM provides the filename and a small text snippet to the bundled model for every file; if inference is unavailable or below the confidence threshold, it falls back to deterministic extension rules. No file contents leave your Mac.
 
 <details>
 <summary><strong>Other install options</strong></summary>
