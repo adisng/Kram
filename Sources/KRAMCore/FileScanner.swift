@@ -11,7 +11,7 @@ public final class FileScanner {
     private let requireStableFiles: Bool
     private let fm = FileManager.default
 
-    public init(classifier: FileClassifier = ClassifierFactory.makeDefault(), config: KRAMConfig = ConfigurationManager().load(), recentFileThreshold: TimeInterval = 5, requireStableFiles: Bool = false) {
+    public init(classifier: FileClassifier = ClassifierFactory.makeDefault(), config: KRAMConfig = ConfigurationManager().load(), recentFileThreshold: TimeInterval = 5, requireStableFiles: Bool = [...]
         self.classifier = classifier
         self.config = config
         self.recentFileThreshold = recentFileThreshold
@@ -141,7 +141,7 @@ public final class FileScanner {
 
     private func isStable(url: URL, initial: URLResourceValues) -> Bool {
         Thread.sleep(forTimeInterval: 0.05)
-        guard let current = try? url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDate]) else { return false }
+        guard let current = try? url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey]) else { return false }
         return current.fileSize == initial.fileSize && current.contentModificationDate == initial.contentModificationDate
     }
 
