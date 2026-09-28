@@ -36,6 +36,10 @@ Version 2.0 introduces a richer terminal folder picker with navigation history, 
 - **Express aliases & shell completion**: Quick shortcuts `kr dl`, `kr desk`, `kr here` plus shell tab completion via `kr completion`
 - **Lifetime usage analytics**: Tracks total runs, files organized, top categories, and frequently organized directories with `kr stats` and `kr last`
 
+## Privacy
+
+Classification runs locally. KRAM reads at most 512 bytes from unknown-extension files for local classification; known extensions do not require content reads. No network connection is used by the organizer. Runtime data is stored under `~/Library/Application Support/KRAM`, configuration under `~/.config/kram`, and compiled model caches under `~/Library/Caches/KRAM`.
+
 ## Quick Start
 
 KRAM requires macOS 13.0 or newer and Swift 5.9+.
@@ -63,12 +67,16 @@ kr <directory>               # Preview any folder, then ask to organize
 kr <directory> --recursive   # Include subdirectories
 kr <directory> --verbose     # Show skipped files and reasons
 kr undo                      # Reverse the last organize
+kr undo <id>                 # Undo a specific transaction from kr history
+kr history                   # List recent transactions
 kr last                      # Show the last transaction
 kr stats                     # Show lifetime statistics
 kr watch dl                  # Watch ~/Downloads and auto-organize
 kr completion                # Set up shell tab completion
 kr help                      # Show help and usage reference
 kr --version                 # Show installed version
+kr <directory> --json        # Emit a machine-readable dry-run document
+kr watch install <directory> # Install a launchd watch agent
 ```
 
 **Preview only (no prompt)**
@@ -97,6 +105,8 @@ kr completion fish | source
 Shorthand flags (`-a`, `-r`, `-v`, `-u`, `-n` and combined forms like `-arv`) are also supported for backward compatibility.
 
 Classification is always local and offline. KRAM provides the filename and a small text snippet to the bundled model for every file; if inference is unavailable or below the confidence threshold, it falls back to deterministic extension rules. No file contents leave your Mac.
+
+If macOS denies access to Downloads, Desktop, or Documents, KRAM reports: `KRAM needs access to <folder>. Grant your terminal access in System Settings → Privacy & Security → Files and Folders (or Full Disk Access).`
 
 ### Configuration
 
