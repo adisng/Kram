@@ -35,7 +35,15 @@ TEMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
 echo -e "${CYAN}➤ Fetching latest KRAM source...${RESET}"
-git clone --depth 1 https://github.com/adisng/Kram.git "$TEMP_DIR/Kram"
+LATEST_TAG=$(curl -fsSL https://api.github.com/repos/adisng/Kram/releases/latest 2>/dev/null \
+    | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)
+if [[ ! "$LATEST_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo -e "${YELLOW}No released tag found; using main.${RESET}"
+    git clone --depth 1 https://github.com/adisng/Kram.git "$TEMP_DIR/Kram"
+else
+    echo -e "${CYAN}➤ Using release ${LATEST_TAG}${RESET}"
+    git clone --branch "$LATEST_TAG" --depth 1 https://github.com/adisng/Kram.git "$TEMP_DIR/Kram"
+fi
 
 echo -e "${CYAN}➤ Building optimized release binary...${RESET}"
 cd "$TEMP_DIR/Kram"
@@ -47,6 +55,7 @@ ln -sf "$INSTALL_DIR/kram" "$INSTALL_DIR/kr"
 chmod +x "$INSTALL_DIR/kram"
 
 echo -e "\n${GREEN}${BOLD}✓ KRAM installed successfully to $INSTALL_DIR!${RESET}\n"
+echo -e "Installed version: ${BOLD}$("$INSTALL_DIR/kram" --version)${RESET}"
 
 # Check if ~/.local/bin is in PATH
 if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then

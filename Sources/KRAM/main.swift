@@ -38,6 +38,10 @@ func getSkippedFiles(in dir: URL, recursive: Bool) -> [SkippedFileInfo] {
 let rawArgs = Array(CommandLine.arguments.dropFirst())
 var parsed = ArgumentParser.parse(rawArgs)
 
+if parsed.smart {
+    UI.printWarning("--smart is deprecated and has no effect; smart classification is always enabled when available.")
+}
+
 // 1. Unknown command handling
 if let unknown = parsed.unknownCommand {
     UI.printUnknownCommand(unknown)
@@ -51,7 +55,7 @@ if parsed.showHelp {
 }
 
 if parsed.showVersion {
-    print("kram 2.0.0")
+    print("kram \(kramVersion)")
     exit(0)
 }
 

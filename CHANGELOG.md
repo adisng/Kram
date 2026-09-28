@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.0.0] - 2026-09-28
+
+### Added
+
+- Watch mode with debounced filesystem monitoring.
+- Bundled offline CoreML classification with deterministic fallback and classifier consistency across CLI and watch mode.
+- User configuration for custom mappings, disabled categories, and filename skip globs.
+- Lifetime stats, recent folders, shell completions, and improved interactive folder navigation.
+- `Installers` and `Data` categories.
+
+### Fixed
+
+- Undo now selects transactions by applied timestamp and directory scope, while skipping corrupt journal entries.
+
 ## [0.1.0] - 2026-09-28
 
 ### Added

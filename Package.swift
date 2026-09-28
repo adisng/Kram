@@ -25,17 +25,7 @@ let package = Package(
         .testTarget(
             name: "KRAMCoreTests",
             dependencies: ["KRAMCore"],
-            path: "Tests/KRAMCoreTests",
-            swiftSettings: [
-                .unsafeFlags(["-F", "/Library/Developer/CommandLineTools/Library/Developer/Frameworks"])
-            ],
-            linkerSettings: [
-                .unsafeFlags([
-                    "-F", "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
-                    "-framework", "Testing",
-                    "-Xlinker", "-rpath", "-Xlinker", "/Library/Developer/CommandLineTools/Library/Developer/Frameworks"
-                ])
-            ]
+            path: "Tests/KRAMCoreTests"
         ),
     ]
 )

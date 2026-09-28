@@ -98,6 +98,24 @@ Shorthand flags (`-a`, `-r`, `-v`, `-u`, `-n` and combined forms like `-arv`) ar
 
 Classification is always local and offline. KRAM provides the filename and a small text snippet to the bundled model for every file; if inference is unavailable or below the confidence threshold, it falls back to deterministic extension rules. No file contents leave your Mac.
 
+### Configuration
+
+KRAM reads optional configuration from `~/.config/kram/config.json`. Missing or invalid files use the defaults. Configuration supports:
+
+- `customMappings`: category name to extension arrays; valid categories override built-in extension mappings.
+- `disabledCategories`: category names whose files are skipped.
+- `skipPatterns`: filename globs such as `"*.tmp"` or `"Thumbs.db"`.
+
+Unknown category names in `customMappings` are ignored with a warning. Example:
+
+```json
+{
+  "customMappings": { "Documents": ["log"] },
+  "disabledCategories": ["Other"],
+  "skipPatterns": ["*.tmp", "Thumbs.db"]
+}
+```
+
 <details>
 <summary><strong>Other install options</strong></summary>
 

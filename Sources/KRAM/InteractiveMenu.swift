@@ -5,7 +5,7 @@ public final class InteractiveMenu {
 
     public static func showMenu() -> KRAMArguments? {
         print("""
-🐭 \(ANSI.bold)KRAM 2.0.0 — Keep. Rearrange. Automate. Manage.\(ANSI.reset)
+🐭 \(ANSI.bold)KRAM \(kramVersion) — Keep. Rearrange. Automate. Manage.\(ANSI.reset)
 
 Select an action:
 
