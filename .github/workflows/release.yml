@@ -23,6 +23,30 @@ jobs:
             -output dist/kram
           tar -czf "dist/kram-${GITHUB_REF_NAME}-macos-universal.tar.gz" -C dist kram
           shasum -a 256 "dist/kram-${GITHUB_REF_NAME}-macos-universal.tar.gz" > "dist/kram-${GITHUB_REF_NAME}-macos-universal.tar.gz.sha256"
+      - name: Sign and notarize
+        if: ${{ secrets.MACOS_CERT_P12 != '' && secrets.MACOS_CERT_PASSWORD != '' && secrets.NOTARY_APPLE_ID != '' && secrets.NOTARY_TEAM_ID != '' && secrets.NOTARY_PASSWORD != '' }}
+        env:
+          MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          NOTARY_APPLE_ID: ${{ secrets.NOTARY_APPLE_ID }}
+          NOTARY_TEAM_ID: ${{ secrets.NOTARY_TEAM_ID }}
+          NOTARY_PASSWORD: ${{ secrets.NOTARY_PASSWORD }}
+        run: |
+          CERT_PATH="$RUNNER_TEMP/developer-id.p12"
+          echo "$MACOS_CERT_P12" | base64 --decode > "$CERT_PATH"
+          security create-keychain -p actions "$RUNNER_TEMP/signing.keychain-db"
+          security default-keychain -s "$RUNNER_TEMP/signing.keychain-db"
+          security unlock-keychain -p actions "$RUNNER_TEMP/signing.keychain-db"
+          security import "$CERT_PATH" -k "$RUNNER_TEMP/signing.keychain-db" -P "$MACOS_CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k actions "$RUNNER_TEMP/signing.keychain-db"
+          IDENTITY=$(security find-identity -v -p codesigning "$RUNNER_TEMP/signing.keychain-db" | sed -n 's/.*"\(Developer ID Application:.*\)".*/\1/p' | head -n 1)
+          codesign --force --options runtime --timestamp --sign "$IDENTITY" dist/kram
+          ditto -c -k --keepParent dist/kram "$RUNNER_TEMP/kram-notarize.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/kram-notarize.zip" --apple-id "$NOTARY_APPLE_ID" --team-id "$NOTARY_TEAM_ID" --password "$NOTARY_PASSWORD" --wait
+          xcrun stapler staple dist/kram
+      - name: Warn when signing secrets are absent
+        if: ${{ !(secrets.MACOS_CERT_P12 != '' && secrets.MACOS_CERT_PASSWORD != '' && secrets.NOTARY_APPLE_ID != '' && secrets.NOTARY_TEAM_ID != '' && secrets.NOTARY_PASSWORD != '') }}
+        run: echo "WARNING: signing/notarization secrets are absent; publishing unsigned artifacts."
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
