@@ -1,5 +1,6 @@
 import Foundation
 import CoreML
+import CryptoKit
 
 /// Smart in-process classifier backed by Apple CoreML.
 /// Runs in-process on Apple Silicon (Apple Neural Engine / GPU) in < 1ms.
@@ -55,13 +56,36 @@ public final class LayaClassifier: FileClassifier {
             let config = MLModelConfiguration()
             config.computeUnits = .all
 
-            let cacheDir = FileManager.default.temporaryDirectory.appendingPathComponent("kram_coreml_cache_v2")
+            let manifestURL = packageURL.appendingPathComponent("Manifest.json")
+            let manifestData = (try? Data(contentsOf: manifestURL)) ?? Data()
+            let keyData = manifestData + Data(kramVersion.utf8)
+            let cacheKey = SHA256.hash(data: keyData).map { String(format: "%02x", $0) }.joined()
+            let preferredRoot = FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent("Library/Caches/KRAM")
+            let cacheRoot: URL
+            do {
+                try FileManager.default.createDirectory(at: preferredRoot, withIntermediateDirectories: true)
+                let probe = preferredRoot.appendingPathComponent(".write-test-\(UUID().uuidString)")
+                try Data().write(to: probe)
+                try FileManager.default.removeItem(at: probe)
+                cacheRoot = preferredRoot
+            } catch {
+                cacheRoot = FileManager.default.temporaryDirectory.appendingPathComponent("kram_coreml_cache")
+                try? FileManager.default.createDirectory(at: cacheRoot, withIntermediateDirectories: true)
+            }
+            let cacheDir = cacheRoot.appendingPathComponent(cacheKey)
             let compiledModelURL = cacheDir.appendingPathComponent("KRAMClassifier.mlmodelc")
+
+            if let entries = try? FileManager.default.contentsOfDirectory(at: cacheRoot, includingPropertiesForKeys: nil) {
+                for entry in entries where entry.lastPathComponent != cacheKey {
+                    try? FileManager.default.removeItem(at: entry)
+                }
+            }
 
             if FileManager.default.fileExists(atPath: compiledModelURL.path) {
                 self.model = try MLModel(contentsOf: compiledModelURL, configuration: config)
             } else {
-                try? FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
+                try FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
                 let compiledTemp = try MLModel.compileModel(at: packageURL)
                 try? FileManager.default.removeItem(at: compiledModelURL)
                 try? FileManager.default.copyItem(at: compiledTemp, to: compiledModelURL)
