@@ -20,6 +20,13 @@ public final class LayaClassifier: FileClassifier {
     ]
 
     public var isUsable: Bool { model != nil && !vocab.isEmpty }
+    private let maxContentBytes: UInt64 = 1_048_576
+    private let binaryExtensions: Set<String> = [
+        "bin", "dmg", "pkg", "app", "exe", "run", "zip", "rar", "7z",
+        "gz", "bz2", "xz", "iso", "deb", "rpm", "mp3", "mp4", "mov",
+        "avi", "mkv", "wav", "flac", "png", "jpg", "jpeg", "gif", "heic",
+        "webp", "ttf", "otf", "woff", "woff2"
+    ]
 
     public init(fallback: FileClassifier = ExtensionClassifier()) {
         self.fallback = fallback
@@ -66,9 +73,11 @@ public final class LayaClassifier: FileClassifier {
     }
 
     public func classify(file: ScannedFile) -> FileCategory {
-        // Always give the bundled model first say. The deterministic classifier
-        // remains the safety net when the model cannot load or is uncertain.
-        // Read a small context snippet (up to 512 bytes) for every file.
+        let deterministicCategory = fallback.classify(file: file)
+        guard deterministicCategory == .other else { return deterministicCategory }
+        guard shouldReadContent(for: file) else { return deterministicCategory }
+
+        // Only unknown, reasonably-sized, text-like files reach CoreML.
         var snippet = ""
         if let handle = try? FileHandle(forReadingFrom: file.url) {
             defer { try? handle.close() }
@@ -79,14 +88,14 @@ public final class LayaClassifier: FileClassifier {
         }
 
         let contextText = "\(file.name) \(snippet.prefix(300))"
-        let modelCategory = predictCategory(for: contextText)
-        let deterministicCategory = fallback.classify(file: file)
+        return predictCategory(for: contextText) ?? deterministicCategory
+    }
 
-        // The model is invoked for every file, while explicit extension rules
-        // remain authoritative for known formats and newer categories.
-        return deterministicCategory == .other
-            ? (modelCategory ?? deterministicCategory)
-            : deterministicCategory
+    private func shouldReadContent(for file: ScannedFile) -> Bool {
+        guard !binaryExtensions.contains(file.ext.lowercased()) else { return false }
+        guard let values = try? file.url.resourceValues(forKeys: [.fileSizeKey]),
+              let size = values.fileSize else { return true }
+        return UInt64(size) <= maxContentBytes
     }
 
     private func extractFeatures(from text: String) -> [String] {
