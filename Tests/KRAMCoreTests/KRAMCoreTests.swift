@@ -480,4 +480,11 @@ struct KRAMCoreTests {
         #expect(!FileManager.default.fileExists(atPath: downloadDest.deletingLastPathComponent().path))
         #expect(FileManager.default.fileExists(atPath: transactionDir.appendingPathComponent("\(newer.id.uuidString).json").path))
     }
+
+    @Test("ClassifierFactory returns a usable classifier")
+    func testClassifierFactory() {
+        let classifier = ClassifierFactory.makeDefault()
+        let file = ScannedFile(url: URL(fileURLWithPath: "/dummy/test.pdf"), name: "test.pdf", ext: "pdf", isHidden: false, isSymlink: false, category: .other)
+        #expect(classifier.classify(file: file) == .documents)
+    }
 }

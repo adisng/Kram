@@ -151,7 +151,7 @@ guard FileManager.default.fileExists(atPath: targetURL.path, isDirectory: &isDir
 // 8. Scan Directory
 // The bundled local CoreML classifier is always active. Its deterministic
 // extension classifier remains the fallback if the model is unavailable.
-let classifier: FileClassifier = LayaClassifier()
+let classifier = ClassifierFactory.makeDefault()
 let scanner = FileScanner(classifier: classifier)
 let planner = OperationPlanner()
 

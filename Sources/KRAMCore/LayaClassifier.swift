@@ -19,6 +19,8 @@ public final class LayaClassifier: FileClassifier {
         .other
     ]
 
+    public var isUsable: Bool { model != nil && !vocab.isEmpty }
+
     public init(fallback: FileClassifier = ExtensionClassifier()) {
         self.fallback = fallback
         loadVocab()

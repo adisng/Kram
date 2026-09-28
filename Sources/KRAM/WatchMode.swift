@@ -30,7 +30,7 @@ public enum WatchMode {
     // MARK: - One Organize Cycle
 
     private static func organizeOnce(directory: URL, displayPath: String) {
-        let scanner = FileScanner()
+        let scanner = FileScanner(classifier: ClassifierFactory.makeDefault())
         let planner = OperationPlanner()
         let mover   = FileMover()
 
