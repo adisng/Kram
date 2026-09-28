@@ -22,6 +22,10 @@
 > 🕉 **क्रम (Krama)**: Sanskrit for *order, method, and systematic arrangement*.  
 > KRAM brings deliberate order to chaotic directories in milliseconds — sorting messy folders into clean, categorized structures with zero dependencies, absolute filesystem safety, and instant 1-click undos.
 
+## KRAM 2.0.0
+
+Version 2.0 introduces a richer terminal folder picker with navigation history, forward/back movement, home and refresh shortcuts, and clearer selection controls. It also includes optional local smart classification with `--smart`.
+
 ## Features
 
 - **Interactive folder picker**: Run `kr` with zero arguments for an in-place terminal directory browser with quick picks, recent folders, and Tab path auto-completion
@@ -274,7 +278,16 @@ kr
   ↑↓ navigate · Enter select · / search · q quit
 ```
 
-Selecting **Browse...** opens an in-place folder browser scoped to your home directory:
+Selecting **Browse...** opens an in-place folder browser scoped to your home directory. It keeps a navigation history so you can move back and forward while comparing folders:
+
+- `↑`/`↓` or `j`/`k` — move through folders
+- `→` or `l` — open the highlighted folder
+- `←` or `b` — go back (then `f` to go forward)
+- `h` — jump to your home folder
+- `r` — refresh the current folder
+- `Enter` — select the highlighted folder
+- `Space` — select the folder currently being viewed
+- `Esc` — return to the previous picker screen; `q` — cancel
 
 ```text
 🐭 KRAM — Browse Folders

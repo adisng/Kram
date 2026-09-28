@@ -21,6 +21,7 @@ public struct KRAMArguments {
     public var isCurrentDir: Bool = false
     public var watch: Bool = false
     public var yes: Bool = false
+    public var smart: Bool = false
     public var showCompletion: Bool = false
     public var completionShell: String? = nil
 
@@ -66,6 +67,8 @@ public final class ArgumentParser {
                 result.showVersion = true
             } else if arg == "--yes" {
                 result.yes = true
+            } else if arg == "--smart" {
+                result.smart = true
             } else if arg.hasPrefix("--") {
                 result.unknownCommand = arg
             } else if arg.hasPrefix("-") && arg.count > 1 {

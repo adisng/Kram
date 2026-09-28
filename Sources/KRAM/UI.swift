@@ -292,7 +292,7 @@ Run  \(ANSI.bold)kr help\(ANSI.reset)  to see all commands.
 
     public static func printHelp() {
         print("""
-🐭 \(ANSI.bold)KRAM 1.5.0 — Keep. Rearrange. Automate. Manage.\(ANSI.reset)
+🐭 \(ANSI.bold)KRAM 2.0.0 — Keep. Rearrange. Automate. Manage.\(ANSI.reset)
 
 \(ANSI.bold)COMMANDS\(ANSI.reset)
   \(ANSI.cyan)kr dl\(ANSI.reset)                       Preview ~/Downloads, then ask to organize

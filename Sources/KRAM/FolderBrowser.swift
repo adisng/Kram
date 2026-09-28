@@ -62,7 +62,10 @@ public final class FolderBrowser {
     public static func browse(startingAt initialURL: URL) -> PickerResult {
         let home = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL.path
         var currentURL = initialURL.standardizedFileURL
+        var backStack: [URL] = []
+        var forwardStack: [URL] = []
         var selectedIndex = 0
+        var refreshToken = 0
 
         let originalTerm = Terminal.enableRawMode()
         Terminal.hideCursor()
@@ -79,7 +82,9 @@ public final class FolderBrowser {
                 selectedIndex = max(0, items.count - 1)
             }
 
-            render(currentURL: currentURL, items: items, selectedIndex: selectedIndex)
+            render(currentURL: currentURL, items: items, selectedIndex: selectedIndex,
+                   canGoBack: !backStack.isEmpty || canGoToParent(currentURL, home: home),
+                   canGoForward: !forwardStack.isEmpty, refreshToken: refreshToken)
 
             let key = Terminal.readKey()
             if key == .unknown && feof(stdin) != 0 {
@@ -95,18 +100,19 @@ public final class FolderBrowser {
                 if !items.isEmpty && selectedIndex < items.count {
                     let item = items[selectedIndex]
                     if !item.isProtected {
+                        backStack.append(currentURL)
+                        forwardStack.removeAll()
                         currentURL = item.url
                         selectedIndex = 0
                     }
                 }
             case .left:
-                let parent = currentURL.deletingLastPathComponent()
-                let currentPath = currentURL.standardizedFileURL.path
-                let parentPath = parent.standardizedFileURL.path
-                if parentPath != currentPath
-                    && currentPath != home
-                    && (parentPath == home || parentPath.hasPrefix(home + "/"))
-                    && !SafetyGuard.shared.isProtectedPath(currentURL) {
+                if let previous = backStack.popLast() {
+                    forwardStack.append(currentURL)
+                    currentURL = previous
+                    selectedIndex = 0
+                } else if let parent = parentURL(of: currentURL, home: home) {
+                    backStack.append(currentURL)
                     currentURL = parent
                     selectedIndex = 0
                 }
@@ -123,6 +129,37 @@ public final class FolderBrowser {
                     Terminal.clearScreen()
                     return .selected(item.url)
                 }
+            case .character("b"):
+                if let previous = backStack.popLast() {
+                    forwardStack.append(currentURL)
+                    currentURL = previous
+                    selectedIndex = 0
+                } else if let parent = parentURL(of: currentURL, home: home) {
+                    backStack.append(currentURL)
+                    currentURL = parent
+                    selectedIndex = 0
+                }
+            case .character("f"):
+                if let next = forwardStack.popLast() {
+                    backStack.append(currentURL)
+                    currentURL = next
+                    selectedIndex = 0
+                }
+            case .character("h"):
+                if currentURL.path != home {
+                    backStack.append(currentURL)
+                    currentURL = URL(fileURLWithPath: home)
+                    forwardStack.removeAll()
+                    selectedIndex = 0
+                }
+            case .character("r"):
+                refreshToken += 1
+                selectedIndex = 0
+            case .character(" "):
+                if !SafetyGuard.shared.isProtectedPath(currentURL) {
+                    Terminal.clearScreen()
+                    return .selected(currentURL)
+                }
             case .escape:
                 Terminal.clearScreen()
                 return .back
@@ -133,6 +170,18 @@ public final class FolderBrowser {
                 break
             }
         }
+    }
+
+    private static func parentURL(of url: URL, home: String) -> URL? {
+        let currentPath = url.standardizedFileURL.path
+        guard currentPath != home, currentPath.hasPrefix(home + "/") else { return nil }
+        let parent = url.deletingLastPathComponent().standardizedFileURL
+        guard parent.path == home || parent.path.hasPrefix(home + "/") else { return nil }
+        return parent
+    }
+
+    private static func canGoToParent(_ url: URL, home: String) -> Bool {
+        parentURL(of: url, home: home) != nil
     }
 
     private static func loadSubfolders(of dir: URL) -> [FolderItem] {
@@ -168,12 +217,15 @@ public final class FolderBrowser {
         print()
     }
 
-    private static func render(currentURL: URL, items: [FolderItem], selectedIndex: Int) {
+    private static func render(currentURL: URL, items: [FolderItem], selectedIndex: Int,
+                               canGoBack: Bool, canGoForward: Bool, refreshToken: Int) {
         Terminal.moveTo(row: 1, col: 1)
 
         printLine("🐭 \(ANSI.bold)KRAM — Browse Folders\(ANSI.reset)")
         printLine(UI.divider)
         printLine("  📍 \(ANSI.cyan)\(UI.formatDisplayPath(currentURL))\(ANSI.reset)")
+        let history = "\(canGoBack ? "← back" : "← —")  \(canGoForward ? "→ forward" : "→ —")"
+        printLine("  \(ANSI.gray)\(history) · refresh #\(refreshToken)\(ANSI.reset)")
         printLine(UI.divider)
         printLine()
 
@@ -213,8 +265,9 @@ public final class FolderBrowser {
 
         printLine()
         printLine(UI.divider)
-        printLine("  \(ANSI.gray)↑↓ navigate · → enter folder · ← go back\(ANSI.reset)")
-        printLine("  \(ANSI.gray)Enter select highlighted · Esc back · q cancel\(ANSI.reset)")
+        printLine("  \(ANSI.gray)↑↓/j k navigate · →/l open · ←/b back · f forward\(ANSI.reset)")
+        printLine("  \(ANSI.gray)Enter select highlighted · Space select current · h home · r refresh\(ANSI.reset)")
+        printLine("  \(ANSI.gray)Esc return to menu · q cancel\(ANSI.reset)")
         printLine()
         fflush(stdout)
     }

@@ -51,7 +51,7 @@ if parsed.showHelp {
 }
 
 if parsed.showVersion {
-    print("kram 1.5.0")
+    print("kram 2.0.0")
     exit(0)
 }
 
@@ -149,7 +149,8 @@ guard FileManager.default.fileExists(atPath: targetURL.path, isDirectory: &isDir
 }
 
 // 8. Scan Directory
-let scanner = FileScanner()
+let classifier: FileClassifier = (parsed.smart || ProcessInfo.processInfo.environment["KRAM_SMART"] == "1") ? LayaClassifier() : ExtensionClassifier()
+let scanner = FileScanner(classifier: classifier)
 let planner = OperationPlanner()
 
 var files: [ScannedFile]

@@ -17,7 +17,10 @@ let package = Package(
         .target(
             name: "KRAMCore",
             dependencies: [],
-            path: "Sources/KRAMCore"
+            path: "Sources/KRAMCore",
+            resources: [
+                .copy("Resources")
+            ]
         ),
         .testTarget(
             name: "KRAMCoreTests",
