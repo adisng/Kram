@@ -27,8 +27,8 @@
 - **Interactive folder picker**: Run `kr` with zero arguments for an in-place terminal directory browser with quick picks, recent folders, and Tab path auto-completion
 - **Ironclad safety boundary**: Hard-blocks system roots, user-protected dotfiles, symlink escapes, and path traversal with zero override mechanism
 - **True transactional undo**: Every sorting run is recorded in an immutable journal, fully reversible in milliseconds with automatic cleanup of empty category directories
-- **Safe by default**: Always previews operations in dry-run mode first, requiring an explicit `--apply` (`-a`) confirmation before moving any file
-- **Express aliases & combined flags**: Fast shorthand including `kr dl -a`, `kr desk`, `kr here`, and combined flags like `kr dl -arv`
+- **Safe by default**: Always previews first, then asks before organizing — one command does the full flow; use `--dry-run` for preview-only or `--yes` to skip confirmation
+- **Express aliases & shell completion**: Quick shortcuts `kr dl`, `kr desk`, `kr here` plus shell tab completion via `kr completion`
 - **Lifetime usage analytics**: Tracks total runs, files organized, top categories, and frequently organized directories with `kr stats` and `kr last`
 
 ## Quick Start
@@ -53,32 +53,47 @@ The installer builds the release binary, places `kram` and `kr` into `~/.local/b
 
 ```bash
 kr                           # Interactive directory picker
-kr dl                        # Dry-run preview on ~/Downloads
-kr dl -a                     # Organize ~/Downloads
-kr dl -ar                    # Apply + scan subdirectories recursively
-kr desk -a                   # Organize ~/Desktop
-kr docs -a                   # Organize ~/Documents
-kr here -a                   # Organize current working directory (pwd)
-kr <directory> -a            # Organize any specific folder path
-kr undo                      # Undo last transaction (or kr dl -u)
-kr last                      # Show details of the last transaction
+kr dl                        # Preview ~/Downloads, then ask to organize
+kr dl --yes                  # Organize ~/Downloads, no confirmation
+kr desk                      # Preview ~/Desktop
+kr docs                      # Preview ~/Documents
+kr here                      # Preview current working directory
+kr <directory>               # Preview any folder, then ask to organize
+kr <directory> --recursive   # Include subdirectories
+kr <directory> --verbose     # Show skipped files and reasons
+kr undo                      # Reverse the last organize
+kr last                      # Show the last transaction
 kr stats                     # Show lifetime statistics
+kr watch dl                  # Watch ~/Downloads and auto-organize
+kr completion                # Set up shell tab completion
 kr help                      # Show help and usage reference
 kr --version                 # Show installed version
 ```
 
-**Preview safely**
+**Preview only (no prompt)**
 
 ```bash
-kr dl                        # Preview ~/Downloads (safe dry-run by default)
-kr desk                      # Preview ~/Desktop
-kr docs                      # Preview ~/Documents
-kr here                      # Preview current working directory
-kr ~/Projects/Assets         # Preview any folder path
-kr dl -v                     # Verbose preview (shows skipped files & reasons)
-kr dl -r                     # Recursive dry-run preview
-kr dl -n                     # Explicit dry-run flag
+kr dl --dry-run              # Preview ~/Downloads, never asks, never changes
+kr desk --dry-run            # Preview ~/Desktop
+kr <directory> --dry-run     # Preview any folder
+kr dl --dry-run --verbose    # Verbose preview (shows skipped files & reasons)
+kr dl --dry-run --recursive  # Recursive preview
 ```
+
+**Shell completion**
+
+```bash
+# Zsh (add to ~/.zshrc)
+eval "$(kr completion zsh)"
+
+# Bash (add to ~/.bash_profile)
+eval "$(kr completion bash)"
+
+# Fish
+kr completion fish | source
+```
+
+Shorthand flags (`-a`, `-r`, `-v`, `-u`, `-n` and combined forms like `-arv`) are also supported for backward compatibility.
 
 <details>
 <summary><strong>Other install options</strong></summary>
@@ -121,9 +136,9 @@ KRAM is architected around strict safety boundaries to eliminate accidental file
 
 ## Features in Detail
 
-### Dry-Run Preview
+### Preview + Organize (Default Flow)
 
-Running `kr` against any target defaults to a safe dry-run preview without moving any files. Add `-v` to inspect skipped files (such as hidden files or files already placed in category folders):
+Running `kr` against any target previews proposed moves and immediately prompts to apply:
 
 ```bash
 kr dl
@@ -161,18 +176,7 @@ Skipped:     0 files
     script.py                     ← script.py
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Run  kram ~/Downloads --apply  to execute.
-```
 
-### Apply + Live Move
-
-Pass `-a` (or `--apply`) to execute. KRAM displays a confirmation prompt, then moves files category-by-category with live progress and reports free disk space:
-
-```bash
-kr dl -a
-```
-
-```text
 🐭 KRAM — Ready to Apply
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   8 files will be moved inside ~/Downloads
@@ -197,6 +201,18 @@ Proceed? [y/N]: y
   Free space: 142.8 GB
   Undo:  kram ~/Downloads --undo
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+Pass `--yes` for automated scripts with no interactive prompt:
+
+```bash
+kr dl --yes
+```
+
+Pass `--dry-run` to preview only without prompting:
+
+```bash
+kr dl --dry-run
 ```
 
 ### Undo

@@ -68,6 +68,19 @@ if parsed.showLast {
     exit(0)
 }
 
+// 3b. Completion
+if parsed.showCompletion {
+    let shell = parsed.completionShell ?? {
+        if let envShell = ProcessInfo.processInfo.environment["SHELL"] {
+            if envShell.hasSuffix("bash") { return "bash" }
+            if envShell.hasSuffix("fish") { return "fish" }
+        }
+        return "zsh"
+    }()
+    print(Completion.generate(shell: shell))
+    exit(0)
+}
+
 // 4. Conflicting flags (-n and -a)
 if parsed.conflictingFlags {
     UI.printFlagConflict()
@@ -94,6 +107,21 @@ if parsed.undo {
         UI.printError("Undo failed: \(error.localizedDescription)")
         exit(1)
     }
+    exit(0)
+}
+
+// 5b. Watch Mode
+if parsed.watch {
+    guard let target = parsed.targetURL else {
+        UI.printError("Error: kr watch requires a directory — e.g. `kr watch dl` or `kr watch ~/Downloads`.")
+        exit(1)
+    }
+    var watchIsDir: ObjCBool = false
+    guard FileManager.default.fileExists(atPath: target.path, isDirectory: &watchIsDir), watchIsDir.boolValue else {
+        UI.printError("Not a directory: \(target.path)")
+        exit(1)
+    }
+    WatchMode.run(directory: target)
     exit(0)
 }
 
@@ -135,37 +163,37 @@ do {
 let operations = planner.plan(files: files, boundary: targetURL)
 let skipped = getSkippedFiles(in: targetURL, recursive: parsed.recursive)
 
-// 9. Dry Run Preview (Default)
-if !parsed.apply || parsed.dryRun {
-    UI.printDryRunPreview(
-        targetURL: targetURL,
-        scannedCount: files.count,
-        operations: operations,
-        skippedFiles: skipped,
-        isVerbose: parsed.verbose,
-        isCurrentDir: parsed.isCurrentDir
-    )
+// 9. Preview
+UI.printDryRunPreview(
+    targetURL: targetURL,
+    scannedCount: files.count,
+    operations: operations,
+    skippedFiles: skipped,
+    isVerbose: parsed.verbose,
+    isCurrentDir: parsed.isCurrentDir,
+    showApplyHint: parsed.dryRun
+)
+
+// 10. Decide whether to proceed to apply
+//   - --dry-run/-n → exit after preview (never prompt, never apply)
+//   - no operations → exit (nothing to do)
+//   - otherwise → prompt, or auto-apply if --yes
+if parsed.dryRun {
     exit(0)
 }
 
-// 10. Apply Changes
 if operations.isEmpty {
-    UI.printDryRunPreview(
-        targetURL: targetURL,
-        scannedCount: files.count,
-        operations: operations,
-        skippedFiles: skipped,
-        isVerbose: parsed.verbose,
-        isCurrentDir: parsed.isCurrentDir
-    )
     exit(0)
 }
 
-let confirmed = UI.promptApplyConfirmation(targetURL: targetURL, count: operations.count)
-guard confirmed else {
-    exit(0)
+if !parsed.yes {
+    let confirmed = UI.promptApplyConfirmation(targetURL: targetURL, count: operations.count)
+    guard confirmed else {
+        exit(0)
+    }
 }
 
+// 11. Apply Changes
 UI.printLiveMoveHeader()
 let mover = FileMover()
 var succeededOps: [PlannedOperation] = []

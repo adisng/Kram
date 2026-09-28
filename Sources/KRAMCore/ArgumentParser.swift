@@ -1,7 +1,7 @@
 import Foundation
 
 public enum SpecialCommand {
-    case here, last, stats, undo, dl, desk, docs, help, version
+    case here, last, stats, undo, dl, desk, docs, help, version, watch, completion
 }
 
 public struct KRAMArguments {
@@ -19,6 +19,10 @@ public struct KRAMArguments {
     public var unknownCommand: String?
     public var conflictingFlags: Bool = false
     public var isCurrentDir: Bool = false
+    public var watch: Bool = false
+    public var yes: Bool = false
+    public var showCompletion: Bool = false
+    public var completionShell: String? = nil
 
     public init() {}
 }
@@ -60,6 +64,8 @@ public final class ArgumentParser {
                 result.showHelp = true
             } else if arg == "--version" {
                 result.showVersion = true
+            } else if arg == "--yes" {
+                result.yes = true
             } else if arg.hasPrefix("--") {
                 result.unknownCommand = arg
             } else if arg.hasPrefix("-") && arg.count > 1 {
@@ -116,6 +122,14 @@ public final class ArgumentParser {
                     result.undo = true
                     result.command = .undo
                     continue
+                case "watch":
+                    result.watch = true
+                    result.command = .watch
+                    continue
+                case "completion":
+                    result.showCompletion = true
+                    result.command = .completion
+                    continue
                 case "dl":
                     result.targetURL = resolveTarget("dl")
                     result.command = .dl
@@ -136,6 +150,23 @@ public final class ArgumentParser {
                 default:
                     break
                 }
+            }
+
+            // If `completion` was the first arg, treat second arg as shell name
+            if result.showCompletion && result.completionShell == nil {
+                result.completionShell = lower
+                continue
+            }
+
+            // If the `watch` command was the first arg, use the second arg as the
+            // target directory — resolve via alias or literal path, same as normal.
+            // All other subsequent positional args also fall through to path resolution.
+
+            // Check for alias first
+            if let aliasURL = resolveTarget(arg) {
+                result.targetURL = aliasURL
+                if lower == "here" { result.isCurrentDir = true }
+                continue
             }
 
             // Check if it's a directory path

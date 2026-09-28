@@ -84,7 +84,8 @@ Run  \(ANSI.bold)kr help\(ANSI.reset)  to see all commands.
         operations: [PlannedOperation],
         skippedFiles: [SkippedFileInfo],
         isVerbose: Bool,
-        isCurrentDir: Bool = false
+        isCurrentDir: Bool = false,
+        showApplyHint: Bool = false
     ) {
         let displayPath = formatDisplayPath(targetURL) + (isCurrentDir ? "  (current)" : "")
         print("\n🐭 \(ANSI.bold)KRAM — Dry Run Preview\(ANSI.reset)")
@@ -131,9 +132,9 @@ Run  \(ANSI.bold)kr help\(ANSI.reset)  to see all commands.
         }
 
         print(divider)
-        if !operations.isEmpty {
+        if !operations.isEmpty && showApplyHint {
             let cmdPath = formatDisplayPath(targetURL)
-            print("Run  \(ANSI.cyan)kram \(cmdPath) --apply\(ANSI.reset)  to execute.\n")
+            print("Run  \(ANSI.cyan)kr \(cmdPath)\(ANSI.reset)  to preview and organize.\n")
         } else {
             print()
         }
@@ -293,28 +294,25 @@ Run  \(ANSI.bold)kr help\(ANSI.reset)  to see all commands.
         print("""
 🐭 \(ANSI.bold)KRAM 1.5.0 — Keep. Rearrange. Automate. Manage.\(ANSI.reset)
 
-\(ANSI.bold)QUICK COMMANDS\(ANSI.reset)
-  \(ANSI.cyan)kr dl\(ANSI.reset)                   Dry-run on ~/Downloads
-  \(ANSI.cyan)kr dl -a\(ANSI.reset)                Organize ~/Downloads
-  \(ANSI.cyan)kr dl -u\(ANSI.reset)                Undo last Downloads operation
-  \(ANSI.cyan)kr desk -a\(ANSI.reset)              Organize ~/Desktop
-  \(ANSI.cyan)kr docs -a\(ANSI.reset)              Organize ~/Documents
-  \(ANSI.cyan)kr here -a\(ANSI.reset)              Organize current folder
-  \(ANSI.cyan)kr last\(ANSI.reset)                 Show last transaction
-  \(ANSI.cyan)kr stats\(ANSI.reset)                Show lifetime stats
+\(ANSI.bold)COMMANDS\(ANSI.reset)
+  \(ANSI.cyan)kr dl\(ANSI.reset)                       Preview ~/Downloads, then ask to organize
+  \(ANSI.cyan)kr dl --yes\(ANSI.reset)                  Organize ~/Downloads, no confirmation
+  \(ANSI.cyan)kr desk\(ANSI.reset)                      Preview ~/Desktop
+  \(ANSI.cyan)kr docs\(ANSI.reset)                      Preview ~/Documents
+  \(ANSI.cyan)kr here\(ANSI.reset)                      Preview the current folder
+  \(ANSI.cyan)kr undo\(ANSI.reset)                      Reverse the last organize
+  \(ANSI.cyan)kr last\(ANSI.reset)                      Show the last transaction
+  \(ANSI.cyan)kr stats\(ANSI.reset)                     Show lifetime stats
+  \(ANSI.cyan)kr watch dl\(ANSI.reset)                  Watch ~/Downloads and auto-organize
+  \(ANSI.cyan)kr completion\(ANSI.reset)                Set up shell tab completion
 
 \(ANSI.bold)FULL USAGE\(ANSI.reset)
-  \(ANSI.cyan)kr <directory>\(ANSI.reset)          Dry-run preview (default, safe)
-  \(ANSI.cyan)kr <directory> -a\(ANSI.reset)       Apply changes
-  \(ANSI.cyan)kr <directory> -r\(ANSI.reset)       Include subdirectories
-  \(ANSI.cyan)kr <directory> -ar\(ANSI.reset)      Apply + recursive
-  \(ANSI.cyan)kr <directory> -u\(ANSI.reset)       Undo last transaction
-  \(ANSI.cyan)kr <directory> -v\(ANSI.reset)       Verbose (show skipped files)
-  \(ANSI.cyan)kr <directory> -n\(ANSI.reset)       Explicit dry-run
-
-\(ANSI.bold)LONG FLAGS\(ANSI.reset) (also work)
-  --apply  --recursive  --undo  --verbose  --dry-run
-  --help   --version
+  \(ANSI.cyan)kr <directory>\(ANSI.reset)                Preview, then ask before organizing
+  \(ANSI.cyan)kr <directory> --yes\(ANSI.reset)          Organize immediately, no confirmation
+  \(ANSI.cyan)kr <directory> --dry-run\(ANSI.reset)      Preview only, never asks, never changes
+  \(ANSI.cyan)kr <directory> --recursive\(ANSI.reset)    Include subdirectories
+  \(ANSI.cyan)kr <directory> --verbose\(ANSI.reset)      Show skipped files and reasons
+  \(ANSI.cyan)kr <directory> --undo\(ANSI.reset)         Undo last transaction for directory
 
 \(ANSI.bold)ALIASES\(ANSI.reset)
   kr = kram
@@ -323,10 +321,52 @@ Run  \(ANSI.bold)kr help\(ANSI.reset)  to see all commands.
   docs → ~/Documents
   here → current directory (pwd)
 
+\(ANSI.bold)SHORT FLAGS\(ANSI.reset) (still supported)
+  -a=--apply  -r=--recursive  -v=--verbose  -u=--undo  -n=--dry-run
+  (combinable, e.g. -ar, -arv)
+
 \(ANSI.bold)SAFETY\(ANSI.reset)
-  Dry-run is always default. Use -a to make real changes.
+  KRAM previews first, then asks before organizing.
+  Use --dry-run to preview only, with no chance of a prompt.
   KRAM never touches files outside your chosen directory.
-  Every change is undoable with -u.
+  Every change is undoable with kr undo.
 """)
+    }
+
+    // MARK: - Watch Mode
+
+    public static func printWatchHeader(directory: URL) {
+        let displayPath = formatDisplayPath(directory)
+        print("🐭 \(ANSI.bold)KRAM — Watching \(displayPath) for new files. Press Ctrl+C to stop.\(ANSI.reset)")
+    }
+
+    public static func printWatchBatch(succeededOps: [PlannedOperation], timestamp: Date) {
+        guard !succeededOps.isEmpty else { return }
+
+        // Build per-category counts
+        var catCounts: [String: Int] = [:]
+        for op in succeededOps {
+            catCounts[op.category, default: 0] += 1
+        }
+
+        // Compact summary: "3 files organized (2 Documents, 1 Image)"
+        let total = succeededOps.count
+        let fileWord = total == 1 ? "file" : "files"
+
+        let catSummary = FileCategory.allCases
+            .compactMap { cat -> String? in
+                guard let count = catCounts[cat.rawValue], count > 0 else { return nil }
+                let word = count == 1 ? "1 \(cat.rawValue.dropLast())" : "\(count) \(cat.rawValue)"
+                return word
+            }
+            .joined(separator: ", ")
+
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "HH:mm:ss"
+        let timeStr = formatter.string(from: timestamp)
+
+        let summary = catSummary.isEmpty ? "" : " (\(catSummary))"
+        print("🐭 \(ANSI.green)\(total) \(fileWord) organized\(summary)\(ANSI.reset) · \(ANSI.gray)\(timeStr)\(ANSI.reset)")
     }
 }
