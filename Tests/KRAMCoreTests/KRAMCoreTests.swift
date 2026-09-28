@@ -441,4 +441,43 @@ struct KRAMCoreTests {
         #expect(FileManager.default.fileExists(atPath: expectedDest.path))
         #expect(!FileManager.default.fileExists(atPath: pdfFile.path))
     }
+
+    @Test("TransactionManager selects scoped and global latest transactions and undoes safely")
+    func testTransactionManagerScopedLatestAndUndo() throws {
+        let root = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".kram-transaction-test-\(UUID().uuidString)")
+        let transactionDir = root.appendingPathComponent("transactions")
+        let downloads = root.appendingPathComponent("Downloads")
+        let desktop = root.appendingPathComponent("Desktop")
+        try FileManager.default.createDirectory(at: downloads, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: desktop, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let manager = TransactionManager(transactionsURL: transactionDir)
+        let downloadSource = downloads.appendingPathComponent("old.txt")
+        let downloadDest = downloads.appendingPathComponent("Documents/old.txt")
+        let desktopSource = desktop.appendingPathComponent("new.txt")
+        let desktopDest = desktop.appendingPathComponent("Documents/new.txt")
+        try "old".write(to: downloadDest, atomically: true, encoding: .utf8)
+        try "new".write(to: desktopDest, atomically: true, encoding: .utf8)
+
+        let older = Transaction(rootDirectory: downloads, operations: [
+            PlannedOperation(sourceURL: downloadSource, destinationURL: downloadDest, category: "Documents")
+        ], appliedAt: Date(timeIntervalSince1970: 100))
+        let newer = Transaction(rootDirectory: desktop, operations: [
+            PlannedOperation(sourceURL: desktopSource, destinationURL: desktopDest, category: "Documents")
+        ], appliedAt: Date(timeIntervalSince1970: 200))
+        try manager.save(transaction: older)
+        try manager.save(transaction: newer)
+        try Data("not json".utf8).write(to: transactionDir.appendingPathComponent("corrupt.json"))
+
+        #expect(try manager.loadLatest(for: downloads)?.id == older.id)
+        #expect(try manager.loadLatest()?.id == newer.id)
+
+        #expect(try manager.undo(boundary: downloads) == 1)
+        #expect(FileManager.default.fileExists(atPath: downloadSource.path))
+        #expect(!FileManager.default.fileExists(atPath: downloadDest.path))
+        #expect(!FileManager.default.fileExists(atPath: downloadDest.deletingLastPathComponent().path))
+        #expect(FileManager.default.fileExists(atPath: transactionDir.appendingPathComponent("\(newer.id.uuidString).json").path))
+    }
 }

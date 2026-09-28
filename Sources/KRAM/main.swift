@@ -89,7 +89,7 @@ if parsed.conflictingFlags {
 // 5. Undo mode
 if parsed.undo {
     let txManager = TransactionManager()
-    guard let latest = try? txManager.loadLatest() else {
+    guard let latest = try? txManager.loadLatest(for: parsed.targetURL) else {
         UI.printWarning("No transaction found to undo.")
         exit(0)
     }

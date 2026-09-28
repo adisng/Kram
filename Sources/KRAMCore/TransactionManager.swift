@@ -6,15 +6,18 @@ public final class TransactionManager {
 
     private let fm = FileManager.default
     private let safetyGuard = SafetyGuard.shared
+    private let customTransactionsDir: URL?
 
     // MARK: - Storage Path
 
     private var transactionsDir: URL {
+        if let customTransactionsDir { return customTransactionsDir }
         let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         return appSupport.appendingPathComponent("KRAM/transactions")
     }
 
-    public init() {
+    public init(transactionsURL: URL? = nil) {
+        self.customTransactionsDir = transactionsURL
         try? fm.createDirectory(at: transactionsDir, withIntermediateDirectories: true)
     }
 
@@ -37,34 +40,35 @@ public final class TransactionManager {
 
     // MARK: - Load Latest
 
-    /// Returns the most recent transaction, or nil if none exist.
-    public func loadLatest() throws -> Transaction? {
-        let files = try fm.contentsOfDirectory(
-            at: transactionsDir,
-            includingPropertiesForKeys: [.creationDateKey],
-            options: [.skipsHiddenFiles]
-        )
-
-        guard !files.isEmpty else { return nil }
-
-        let sorted = try files.sorted {
-            let d1 = try $0.resourceValues(forKeys: [.creationDateKey]).creationDate ?? .distantPast
-            let d2 = try $1.resourceValues(forKeys: [.creationDateKey]).creationDate ?? .distantPast
-            return d1 > d2
-        }
-
-        guard let latest = sorted.first else { return nil }
-        let data = try Data(contentsOf: latest)
+    /// Returns the newest readable transaction, optionally constrained to a boundary.
+    public func loadLatest(for boundary: URL? = nil) throws -> Transaction? {
+        let files = try fm.contentsOfDirectory(at: transactionsDir, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode(Transaction.self, from: data)
+        let boundaryPath = boundary?.standardizedFileURL.path
+        var transactions: [Transaction] = []
+
+        for file in files where file.pathExtension == "json" {
+            do {
+                let transaction = try decoder.decode(Transaction.self, from: Data(contentsOf: file))
+                if let boundaryPath {
+                    let root = transaction.rootDirectory.standardizedFileURL.path
+                    guard root == boundaryPath || root.hasPrefix(boundaryPath + "/") else { continue }
+                }
+                transactions.append(transaction)
+            } catch {
+                fputs("\(ANSI.yellow)⚠ Skipping unreadable transaction \(file.lastPathComponent): \(error.localizedDescription)\(ANSI.reset)\n", stderr)
+            }
+        }
+
+        return transactions.max { $0.appliedAt < $1.appliedAt }
     }
 
     // MARK: - Undo
 
     /// Reverses the latest transaction. Returns count of files restored.
     public func undo(boundary: URL, verbose: Bool = false) throws -> Int {
-        guard let transaction = try loadLatest() else {
+        guard let transaction = try loadLatest(for: boundary) else {
             throw KRAMError.noTransactionToUndo
         }
 
@@ -126,10 +130,8 @@ public final class TransactionManager {
         }
 
         // Remove the transaction file after successful undo
-        if let latest = try? loadLatest(), latest.id == transaction.id {
-            let file = transactionsDir.appendingPathComponent("\(transaction.id.uuidString).json")
-            try? fm.removeItem(at: file)
-        }
+        let file = transactionsDir.appendingPathComponent("\(transaction.id.uuidString).json")
+        try? fm.removeItem(at: file)
 
         return restoredCount
     }
