@@ -7,6 +7,39 @@ import KRAMCore
 /// `kr <dir> -a` uses in main.swift.
 public enum WatchMode {
 
+    public static func install(target: URL) throws {
+        guard !SafetyGuard.shared.isProtectedPath(target) else { throw SafetyViolation.protectedUserPath(path: target.path) }
+        let slug = target.path.replacingOccurrences(of: "/", with: "-").trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+        let plist = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/LaunchAgents/com.kram.watch.\(slug).plist")
+        let logs = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/KRAM")
+        try FileManager.default.createDirectory(at: plist.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: logs, withIntermediateDirectories: true)
+        let executable = CommandLine.arguments[0]
+        let xml = """<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict><key>Label</key><string>com.kram.watch.\(slug)</string><key>ProgramArguments</key><array><string>\(executable)</string><string>watch</string><string>\(target.path)</string></array><key>RunAtLoad</key><true/><key>KeepAlive</key><true/><key>StandardOutPath</key><string>\(logs.appendingPathComponent("\(slug).log").path)</string><key>StandardErrorPath</key><string>\(logs.appendingPathComponent("\(slug).error.log").path)</string></dict></plist>
+"""
+        try xml.write(to: plist, atomically: true, encoding: .utf8)
+        try launchctl(["bootstrap", "gui/\(getuid())", plist.path])
+        print("Installed launch agent: \(plist.path)")
+        print("Logs: \(logs.path)")
+    }
+
+    public static func uninstall(target: URL) throws {
+        let slug = target.path.replacingOccurrences(of: "/", with: "-").trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+        let label = "com.kram.watch.\(slug)"
+        let plist = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/LaunchAgents/\(label).plist")
+        try? launchctl(["bootout", "gui/\(getuid())", label])
+        try? FileManager.default.removeItem(at: plist)
+        print("Uninstalled launch agent: \(plist.path)")
+    }
+
+    private static func launchctl(_ args: [String]) throws {
+        let process = Process(); process.executableURL = URL(fileURLWithPath: "/bin/launchctl"); process.arguments = args
+        try process.run(); process.waitUntilExit()
+        guard process.terminationStatus == 0 else { throw KRAMError.operationFailed(source: "launchctl", reason: "command failed") }
+    }
+
     // MARK: - Entry Point
 
     public static func run(directory: URL) {

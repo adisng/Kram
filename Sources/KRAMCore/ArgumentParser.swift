@@ -25,6 +25,9 @@ public struct KRAMArguments {
     public var showCompletion: Bool = false
     public var showHistory: Bool = false
     public var transactionID: UUID?
+    public var watchInstall = false
+    public var watchUninstall = false
+    public var watchStatus = false
     public var json: Bool = false
     public var completionShell: String? = nil
 
@@ -137,6 +140,12 @@ public final class ArgumentParser {
                 case "watch":
                     result.watch = true
                     result.command = .watch
+                    if nonFlagArgs.count > index + 1 {
+                        let action = nonFlagArgs[index + 1].lowercased()
+                        result.watchInstall = action == "install"
+                        result.watchUninstall = action == "uninstall"
+                        result.watchStatus = action == "status"
+                    }
                     continue
                 case "completion":
                     result.showCompletion = true

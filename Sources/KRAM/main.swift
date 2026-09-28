@@ -127,6 +127,14 @@ if parsed.undo {
 
 // 5b. Watch Mode
 if parsed.watch {
+    if parsed.watchInstall || parsed.watchUninstall {
+        guard let target = parsed.targetURL else { UI.printError("watch install/uninstall requires a directory"); exit(1) }
+        do {
+            if parsed.watchInstall { try WatchMode.install(target: target) }
+            else { try WatchMode.uninstall(target: target) }
+        } catch { UI.printError(error.localizedDescription); exit(1) }
+        exit(0)
+    }
     guard let target = parsed.targetURL else {
         UI.printError("Error: kr watch requires a directory — e.g. `kr watch dl` or `kr watch ~/Downloads`.")
         exit(1)
