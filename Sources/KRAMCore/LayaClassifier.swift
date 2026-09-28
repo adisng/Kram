@@ -77,7 +77,14 @@ public final class LayaClassifier: FileClassifier {
         }
 
         let contextText = "\(file.name) \(snippet.prefix(300))"
-        return predictCategory(for: contextText) ?? fallback.classify(file: file)
+        let modelCategory = predictCategory(for: contextText)
+        let deterministicCategory = fallback.classify(file: file)
+
+        // The model is invoked for every file, while explicit extension rules
+        // remain authoritative for known formats and newer categories.
+        return deterministicCategory == .other
+            ? (modelCategory ?? deterministicCategory)
+            : deterministicCategory
     }
 
     private func extractFeatures(from text: String) -> [String] {

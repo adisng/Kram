@@ -25,6 +25,18 @@ struct KRAMCoreTests {
         let zip = ScannedFile(url: URL(fileURLWithPath: "/dummy/archive.zip"), name: "archive.zip", ext: "zip", isHidden: false, isSymlink: false, category: .other)
         #expect(classifier.classify(file: zip) == .archives)
 
+        let dmg = ScannedFile(url: URL(fileURLWithPath: "/dummy/app.dmg"), name: "app.dmg", ext: "dmg", isHidden: false, isSymlink: false, category: .other)
+        #expect(classifier.classify(file: dmg) == .installers)
+
+        let app = ScannedFile(url: URL(fileURLWithPath: "/dummy/Tool.app"), name: "Tool.app", ext: "app", isHidden: false, isSymlink: false, category: .other)
+        #expect(classifier.classify(file: app) == .installers)
+
+        let json = ScannedFile(url: URL(fileURLWithPath: "/dummy/config.json"), name: "config.json", ext: "json", isHidden: false, isSymlink: false, category: .other)
+        #expect(classifier.classify(file: json) == .data)
+
+        let yaml = ScannedFile(url: URL(fileURLWithPath: "/dummy/config.yaml"), name: "config.yaml", ext: "yaml", isHidden: false, isSymlink: false, category: .other)
+        #expect(classifier.classify(file: yaml) == .data)
+
         let unknown = ScannedFile(url: URL(fileURLWithPath: "/dummy/unknown.xyz123"), name: "unknown.xyz123", ext: "xyz123", isHidden: false, isSymlink: false, category: .other)
         #expect(classifier.classify(file: unknown) == .other)
     }

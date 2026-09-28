@@ -40,13 +40,9 @@ Version 2.0 introduces a richer terminal folder picker with navigation history, 
 
 KRAM requires macOS 13.0 or newer and Swift 5.9+.
 
-**Install via Homebrew**
+**Install via script**
 
-```bash
-brew install adisng/tap/kram
-```
-
-**Or via script**
+Review [`install.sh`](install.sh) before running it:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/adisng/Kram/main/install.sh | bash
@@ -187,7 +183,7 @@ Skipped:     0 files
 🐭 KRAM — Ready to Apply
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   8 files will be moved inside ~/Downloads
-  Undo anytime:  kram ~/Downloads --undo
+  Undo anytime:  kr undo
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Proceed? [y/N]: y
@@ -206,7 +202,7 @@ Proceed? [y/N]: y
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✓ Done   8 moved · 0 skipped · 0 failed
   Free space: 142.8 GB
-  Undo:  kram ~/Downloads --undo
+  Undo:  kr undo
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -224,7 +220,7 @@ kr dl --dry-run
 
 ### Undo
 
-Run `kr undo` (or `kr dl -u`) to roll back the most recent transaction. Files are restored to their original locations and empty category directories are automatically removed:
+`kr undo` reverts the last transaction in any directory. `kr dl -u` reverts the last transaction for `~/Downloads` only. Files are restored to their original locations and empty category directories are automatically removed:
 
 ```bash
 kr undo
@@ -267,7 +263,7 @@ kr
   ❯ 📥 Downloads       ~/Downloads            (48 files)
     🖥  Desktop        ~/Desktop              (12 files)
     📄 Documents       ~/Documents            (187 files)
-    📁 Current folder  /Users/aditya/Projects (7 files)
+    📁 Current folder  /Users/you/Projects (7 files)
 
   📂 Recent Folders
   ──────────────────────────────────────────
@@ -357,7 +353,7 @@ Files moved: 8
   💻 Code             1 file
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Undo:  kr dl -u   or   kram ~/Downloads --undo
+Undo:  kr dl -u   or   kr undo
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -371,9 +367,11 @@ KRAM categorizes files based on their extensions using deterministic mapping in 
 | **🖼 Images** | `.jpg`, `.jpeg`, `.png`, `.gif`, `.bmp`, `.tiff`, `.tif`, `.webp`, `.heic`, `.heif`, `.svg`, `.ico`, `.raw`, `.cr2`, `.nef`, `.arw` |
 | **🎬 Videos** | `.mp4`, `.mov`, `.avi`, `.mkv`, `.wmv`, `.flv`, `.webm`, `.m4v`, `.mpg`, `.mpeg`, `.3gp`, `.ogv` |
 | **🎵 Audio** | `.mp3`, `.wav`, `.aac`, `.flac`, `.ogg`, `.wma`, `.m4a`, `.aiff`, `.opus`, `.mid`, `.midi` |
-| **🗜 Archives** | `.zip`, `.rar`, `.tar`, `.gz`, `.bz2`, `.7z`, `.xz`, `.dmg`, `.iso`, `.pkg`, `.deb`, `.rpm` |
+| **🗜 Archives** | `.zip`, `.rar`, `.tar`, `.gz`, `.bz2`, `.7z`, `.xz`, `.iso`, `.deb`, `.rpm` |
+| **📦 Installers** | `.dmg`, `.pkg`, `.app` |
 | **📊 Spreadsheets** | `.xls`, `.xlsx`, `.csv`, `.tsv`, `.ods`, `.numbers` |
-| **💻 Code** | `.py`, `.js`, `.ts`, `.swift`, `.kt`, `.java`, `.c`, `.cpp`, `.h`, `.hpp`, `.cs`, `.go`, `.rs`, `.rb`, `.php`, `.html`, `.css`, `.sh`, `.bash`, `.zsh`, `.fish`, `.ps1`, `.lua`, `.r`, `.sql`, `.json`, `.yaml`, `.yml`, `.toml`, `.xml`, `.ini`, `.env`, `.m` |
+| **💻 Code** | `.py`, `.js`, `.ts`, `.swift`, `.kt`, `.java`, `.c`, `.cpp`, `.h`, `.hpp`, `.cs`, `.go`, `.rs`, `.rb`, `.php`, `.html`, `.css`, `.sh`, `.bash`, `.zsh`, `.fish`, `.ps1`, `.lua`, `.r`, `.sql`, `.xml`, `.ini`, `.env`, `.m` |
+| **🗃 Data** | `.json`, `.yaml`, `.yml`, `.toml` |
 | **🔤 Fonts** | `.ttf`, `.otf`, `.woff`, `.woff2`, `.eot` |
 | **📚 eBooks** | `.epub`, `.mobi`, `.azw`, `.azw3`, `.fb2` |
 | **⚙️ Executables** | `.exe`, `.bin`, `.run` |

@@ -147,7 +147,7 @@ Run  \(ANSI.bold)kr help\(ANSI.reset)  to see all commands.
         print("\n🐭 \(ANSI.bold)KRAM — Ready to Apply\(ANSI.reset)")
         print(divider)
         print("  \(count) files will be moved inside \(ANSI.cyan)\(displayPath)\(ANSI.reset)")
-        print("  Undo anytime:  \(ANSI.cyan)kram \(displayPath) --undo\(ANSI.reset)")
+        print("  Undo anytime:  \(ANSI.cyan)kr undo\(ANSI.reset)")
         print(divider)
         print()
         print("Proceed? [y/N]: ", terminator: "")
@@ -192,7 +192,7 @@ Run  \(ANSI.bold)kr help\(ANSI.reset)  to see all commands.
         print(divider)
         print("\(ANSI.green)✓ Done\(ANSI.reset)   \(succeededCount) moved · \(skippedCount) skipped · \(failedCount) failed")
         print("  Free space: \(freeDiskSpace())")
-        print("  Undo:  \(ANSI.cyan)kram \(displayPath) --undo\(ANSI.reset)")
+        print("  Undo:  \(ANSI.cyan)kr undo\(ANSI.reset)")
         print(divider)
         print()
     }
@@ -253,7 +253,7 @@ Run  \(ANSI.bold)kr help\(ANSI.reset)  to see all commands.
 
         print()
         print(divider)
-        print("Undo:  \(ANSI.cyan)kr dl -u\(ANSI.reset)   or   \(ANSI.cyan)kram \(displayPath) --undo\(ANSI.reset)")
+        print("Undo:  \(ANSI.cyan)kr dl -u\(ANSI.reset)   or   \(ANSI.cyan)kr undo\(ANSI.reset)")
         print(divider)
         print()
     }

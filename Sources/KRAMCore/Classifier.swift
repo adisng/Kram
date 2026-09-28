@@ -45,8 +45,10 @@ public final class ExtensionClassifier: FileClassifier {
         // Archives
         "zip": .archives, "rar": .archives, "tar": .archives,
         "gz": .archives, "bz2": .archives, "7z": .archives,
-        "xz": .archives, "dmg": .archives, "iso": .archives,
-        "pkg": .archives, "deb": .archives, "rpm": .archives,
+        "xz": .archives, "iso": .archives, "deb": .archives, "rpm": .archives,
+
+        // Installers
+        "dmg": .installers, "pkg": .installers, "app": .installers,
 
         // Spreadsheets
         "xls": .spreadsheets, "xlsx": .spreadsheets,
@@ -60,9 +62,11 @@ public final class ExtensionClassifier: FileClassifier {
         "rs": .code, "rb": .code, "php": .code, "html": .code,
         "css": .code, "sh": .code, "bash": .code, "zsh": .code,
         "fish": .code, "ps1": .code, "lua": .code, "r": .code,
-        "sql": .code, "json": .code, "yaml": .code, "yml": .code,
-        "toml": .code, "xml": .code, "ini": .code, "env": .code,
+        "sql": .code, "xml": .code, "ini": .code, "env": .code,
         "m": .code,
+
+        // Data
+        "json": .data, "yaml": .data, "yml": .data, "toml": .data,
 
         // Fonts
         "ttf": .fonts, "otf": .fonts, "woff": .fonts,
