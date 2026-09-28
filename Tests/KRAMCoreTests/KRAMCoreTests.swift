@@ -573,4 +573,20 @@ struct KRAMCoreTests {
         let files = try FileScanner(classifier: ExtensionClassifier(), recentFileThreshold: 5).scan(directory: root)
         #expect(files.map(\.name) == ["old.txt"])
     }
+
+    @Test("FileMover skips cross-volume operations without copying")
+    func testCrossVolumeMoveIsSkipped() throws {
+        let root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".kram-volume-test-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let source = root.appendingPathComponent("file.txt")
+        let destination = root.appendingPathComponent("Documents/file.txt")
+        try "x".write(to: source, atomically: true, encoding: .utf8)
+        let op = PlannedOperation(sourceURL: source, destinationURL: destination, category: "Documents")
+        let mover = FileMover(volumeIdentifierProvider: { url in url == source ? "one" : "two" })
+        let result = mover.apply(operations: [op], boundary: root)
+        #expect(result.succeeded.isEmpty)
+        #expect(result.skipped.first?.1.localizedDescription == "Skipped: different volume")
+        #expect(FileManager.default.fileExists(atPath: source.path))
+    }
 }

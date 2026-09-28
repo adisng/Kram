@@ -8,8 +8,14 @@ public final class FileMover {
 
     private let fm = FileManager.default
     private let safetyGuard = SafetyGuard.shared
+    private let volumeIdentifierProvider: (URL) -> AnyHashable?
 
-    public init() {}
+    public init(volumeIdentifierProvider: ((URL) -> AnyHashable?)? = nil) {
+        self.volumeIdentifierProvider = volumeIdentifierProvider ?? { url in
+            guard let values = try? url.resourceValues(forKeys: [.volumeIdentifierKey]) else { return nil }
+            return values.volumeIdentifier
+        }
+    }
 
     // MARK: - Apply
 
@@ -26,6 +32,11 @@ public final class FileMover {
 
         for op in operations {
             do {
+                if let sourceVolume = volumeIdentifierProvider(op.sourceURL),
+                   let destinationVolume = volumeIdentifierProvider(op.destinationURL),
+                   sourceVolume != destinationVolume {
+                    throw KRAMError.differentVolume(source: op.sourceURL.path)
+                }
                 // Safety check — throws on any violation
                 try safetyGuard.validate(
                     source: op.sourceURL,

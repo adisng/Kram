@@ -124,6 +124,7 @@ public enum KRAMError: Error, LocalizedError {
     case noTransactionToUndo
     case operationFailed(source: String, reason: String)
     case permissionRequired(path: String)
+    case differentVolume(source: String)
 
     public var errorDescription: String? {
         switch self {
@@ -133,6 +134,7 @@ public enum KRAMError: Error, LocalizedError {
         case .noTransactionToUndo:           return "No transaction found to undo."
         case .operationFailed(let s, let r): return "Operation failed for \(s): \(r)"
         case .permissionRequired(let p): return "KRAM needs access to \(p). Grant your terminal access in System Settings → Privacy & Security → Files and Folders (or Full Disk Access)."
+        case .differentVolume: return "Skipped: different volume"
         }
     }
 }
