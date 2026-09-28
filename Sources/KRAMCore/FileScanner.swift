@@ -69,6 +69,11 @@ public final class FileScanner {
 
         var results: [ScannedFile] = []
         for case let url as URL in enumerator {
+            if categoryFolderNames.contains(url.lastPathComponent),
+               (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true {
+                enumerator.skipDescendants()
+                continue
+            }
             if let file = try? makeScannedFile(url: url, rootDirectory: directory, skipDirectories: true) {
                 results.append(file)
             }

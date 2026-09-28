@@ -502,4 +502,61 @@ struct KRAMCoreTests {
         #expect(files.map(\.name).sorted() == ["note.custom"])
         #expect(files.first?.category == .documents)
     }
+
+    @Test("Scanner skips hidden files and category descendants recursively")
+    func testScannerRecursiveSkipsHiddenAndCategoryFolders() throws {
+        let root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".kram-scan-test-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root.appendingPathComponent("Documents/nested"), withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try "x".write(to: root.appendingPathComponent("visible.txt"), atomically: true, encoding: .utf8)
+        try "x".write(to: root.appendingPathComponent(".hidden.txt"), atomically: true, encoding: .utf8)
+        try "x".write(to: root.appendingPathComponent("Documents/nested/already.txt"), atomically: true, encoding: .utf8)
+        let files = try FileScanner(classifier: ExtensionClassifier()).scan(directory: root, recursive: true)
+        #expect(files.map(\.name) == ["visible.txt"])
+    }
+
+    @Test("Scanner classifies pkg and app as Installers")
+    func testScannerInstallerExtensions() throws {
+        let root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".kram-installer-test-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try Data().write(to: root.appendingPathComponent("tool.pkg"))
+        try Data().write(to: root.appendingPathComponent("tool.app"))
+        let files = try FileScanner(classifier: ExtensionClassifier()).scan(directory: root)
+        #expect(files.count == 2)
+        #expect(files.allSatisfy { $0.category == .installers })
+    }
+
+    @Test("Planner reserves names across multiple operations")
+    func testPlannerReservesDuplicateDestinations() throws {
+        let root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".kram-collision-test-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root.appendingPathComponent("one"), withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: root.appendingPathComponent("two"), withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let a = root.appendingPathComponent("one/report.pdf")
+        let b = root.appendingPathComponent("two/report.pdf")
+        try Data().write(to: a); try Data().write(to: b)
+        let files = [
+            ScannedFile(url: a, name: "report.pdf", ext: "pdf", isHidden: false, isSymlink: false, category: .documents),
+            ScannedFile(url: b, name: "report.pdf", ext: "pdf", isHidden: false, isSymlink: false, category: .documents)
+        ]
+        let ops = OperationPlanner().plan(files: files, boundary: root)
+        #expect(ops.map { $0.destinationURL.lastPathComponent } == ["report.pdf", "report (1).pdf"])
+    }
+
+    @Test("Symlink escaping the boundary is rejected during move")
+    func testSymlinkEscapeMove() throws {
+        let root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".kram-symlink-test-\(UUID().uuidString)")
+        let outside = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".kram-outside-\(UUID().uuidString).txt")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try "outside".write(to: outside, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: root); try? FileManager.default.removeItem(at: outside) }
+        let link = root.appendingPathComponent("link.txt")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: outside)
+        let scanned = try FileScanner(classifier: ExtensionClassifier()).scan(directory: root)
+        let ops = OperationPlanner().plan(files: scanned, boundary: root)
+        let result = FileMover().apply(operations: ops, boundary: root)
+        #expect(result.succeeded.isEmpty)
+        #expect(result.skipped.contains { $0.1 is SafetyViolation })
+    }
 }

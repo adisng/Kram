@@ -13,11 +13,12 @@ public final class OperationPlanner {
     /// Returns a list of PlannedOperation for all given files.
     public func plan(files: [ScannedFile], boundary: URL) -> [PlannedOperation] {
         var operations: [PlannedOperation] = []
+        var reservedDestinations: Set<String> = []
 
         for file in files {
             let categoryDir = boundary.appendingPathComponent(file.category.rawValue)
             let rawDest     = categoryDir.appendingPathComponent(file.name)
-            let finalDest   = resolveCollision(destination: rawDest)
+            let finalDest   = resolveCollision(destination: rawDest, reserved: reservedDestinations)
 
             if file.url.standardizedFileURL.path == finalDest.standardizedFileURL.path {
                 continue
@@ -29,6 +30,7 @@ public final class OperationPlanner {
                 category: file.category.rawValue
             )
             operations.append(op)
+            reservedDestinations.insert(finalDest.standardizedFileURL.path)
         }
 
         return operations
@@ -39,7 +41,11 @@ public final class OperationPlanner {
     /// Returns a destination URL that does not conflict with an existing file.
     /// Appends (1), (2), ... up to (999) before giving up.
     public func resolveCollision(destination: URL) -> URL {
-        guard fm.fileExists(atPath: destination.path) else {
+        resolveCollision(destination: destination, reserved: [])
+    }
+
+    private func resolveCollision(destination: URL, reserved: Set<String>) -> URL {
+        guard fm.fileExists(atPath: destination.path) || reserved.contains(destination.standardizedFileURL.path) else {
             return destination
         }
 
@@ -55,7 +61,7 @@ public final class OperationPlanner {
                 newName = "\(base) (\(i)).\(ext)"
             }
             let candidate = dir.appendingPathComponent(newName)
-            if !fm.fileExists(atPath: candidate.path) {
+            if !fm.fileExists(atPath: candidate.path) && !reserved.contains(candidate.standardizedFileURL.path) {
                 return candidate
             }
         }
