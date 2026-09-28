@@ -11,12 +11,11 @@ public protocol FileClassifier {
 /// Maps lowercase file extensions to FileCategory.
 /// Unknown or missing extensions return .other.
 public final class ExtensionClassifier: FileClassifier {
-
-    public init() {}
+    private let extensionMap: [String: FileCategory]
 
     // MARK: - Extension Map
 
-    private let extensionMap: [String: FileCategory] = [
+    private static let builtInExtensionMap: [String: FileCategory] = [
         // Documents
         "pdf": .documents, "doc": .documents, "docx": .documents,
         "txt": .documents, "rtf": .documents, "odt": .documents,
@@ -79,6 +78,20 @@ public final class ExtensionClassifier: FileClassifier {
         // Executables
         "exe": .executables, "bin": .executables, "run": .executables,
     ]
+
+    public init(config: KRAMConfig = ConfigurationManager().load()) {
+        var map = Self.builtInExtensionMap
+        for (categoryName, extensions) in config.customMappings {
+            guard let category = FileCategory(rawValue: categoryName) else {
+                fputs("\(ANSI.yellow)⚠ Ignoring unknown configured category: \(categoryName)\(ANSI.reset)\n", stderr)
+                continue
+            }
+            for ext in extensions {
+                map[ext.trimmingCharacters(in: CharacterSet(charactersIn: ".")).lowercased()] = category
+            }
+        }
+        extensionMap = map
+    }
 
     // MARK: - Classify
 

@@ -28,8 +28,8 @@ public final class LayaClassifier: FileClassifier {
         "webp", "ttf", "otf", "woff", "woff2"
     ]
 
-    public init(fallback: FileClassifier = ExtensionClassifier()) {
-        self.fallback = fallback
+    public init(fallback: FileClassifier? = nil) {
+        self.fallback = fallback ?? ExtensionClassifier()
         loadVocab()
         loadModel()
     }

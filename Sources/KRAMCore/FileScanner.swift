@@ -6,10 +6,12 @@ import Foundation
 public final class FileScanner {
 
     private let classifier: FileClassifier
+    private let config: KRAMConfig
     private let fm = FileManager.default
 
-    public init(classifier: FileClassifier = ExtensionClassifier()) {
+    public init(classifier: FileClassifier = ClassifierFactory.makeDefault(), config: KRAMConfig = ConfigurationManager().load()) {
         self.classifier = classifier
+        self.config = config
     }
 
     // MARK: - Known Category Folder Names
@@ -105,6 +107,7 @@ public final class FileScanner {
         }
 
         let name = url.lastPathComponent
+        if config.skipPatterns.contains(where: { Self.globMatches($0, name: name) }) { return nil }
         let ext  = url.pathExtension.lowercased()
 
         // Build a temporary ScannedFile with .other to classify
@@ -112,9 +115,23 @@ public final class FileScanner {
                                isHidden: isHidden, isSymlink: isSymlink,
                                category: .other)
         let category = classifier.classify(file: temp)
+        if config.disabledCategories.contains(category.rawValue) { return nil }
 
         return ScannedFile(url: url, name: name, ext: ext,
                            isHidden: isHidden, isSymlink: isSymlink,
                            category: category)
+    }
+
+    private static func globMatches(_ pattern: String, name: String) -> Bool {
+        var regex = "^"
+        for scalar in pattern.unicodeScalars {
+            switch scalar {
+            case "*": regex += ".*"
+            case "?": regex += "."
+            default: regex += NSRegularExpression.escapedPattern(for: String(scalar))
+            }
+        }
+        regex += "$"
+        return name.range(of: regex, options: .regularExpression) != nil
     }
 }

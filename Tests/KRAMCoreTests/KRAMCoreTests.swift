@@ -487,4 +487,19 @@ struct KRAMCoreTests {
         let file = ScannedFile(url: URL(fileURLWithPath: "/dummy/test.pdf"), name: "test.pdf", ext: "pdf", isHidden: false, isSymlink: false, category: .other)
         #expect(classifier.classify(file: file) == .documents)
     }
+
+    @Test("Configuration custom mappings, disabled categories, and skip patterns")
+    func testConfigurationWiring() throws {
+        let root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".kram-config-test-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try "x".write(to: root.appendingPathComponent("note.custom"), atomically: true, encoding: .utf8)
+        try "x".write(to: root.appendingPathComponent("skip.txt"), atomically: true, encoding: .utf8)
+        try "x".write(to: root.appendingPathComponent("image.png"), atomically: true, encoding: .utf8)
+        let config = KRAMConfig(customMappings: ["Documents": ["custom"]], disabledCategories: ["Images"], skipPatterns: ["skip.*"])
+        let scanner = FileScanner(classifier: ExtensionClassifier(config: config), config: config)
+        let files = try scanner.scan(directory: root)
+        #expect(files.map(\.name).sorted() == ["note.custom"])
+        #expect(files.first?.category == .documents)
+    }
 }

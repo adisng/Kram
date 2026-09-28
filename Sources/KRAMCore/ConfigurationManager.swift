@@ -7,7 +7,21 @@ public struct KRAMConfig: Codable {
     public var disabledCategories: [String] = []
     public var skipPatterns: [String] = [".DS_Store", "Thumbs.db", "desktop.ini"]
 
-    public init() {}
+    public init(customMappings: [String: [String]] = [:], disabledCategories: [String] = [], skipPatterns: [String] = [".DS_Store", "Thumbs.db", "desktop.ini"]) {
+        self.customMappings = customMappings
+        self.disabledCategories = disabledCategories
+        self.skipPatterns = skipPatterns
+    }
+
+    enum CodingKeys: String, CodingKey { case version, customMappings, disabledCategories, skipPatterns }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        version = try c.decodeIfPresent(String.self, forKey: .version) ?? "1"
+        customMappings = try c.decodeIfPresent([String: [String]].self, forKey: .customMappings) ?? [:]
+        disabledCategories = try c.decodeIfPresent([String].self, forKey: .disabledCategories) ?? []
+        skipPatterns = try c.decodeIfPresent([String].self, forKey: .skipPatterns) ?? [".DS_Store", "Thumbs.db", "desktop.ini"]
+    }
 }
 
 /// Reads and writes KRAM config from ~/.config/kram/config.json
