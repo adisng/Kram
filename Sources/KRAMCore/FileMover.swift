@@ -57,7 +57,8 @@ public final class FileMover {
                 }
 
             } catch {
-                skipped.append((op, error))
+                let normalized = Self.permissionError(error)
+                skipped.append((op, normalized ?? error))
                 if verbose {
                     print("\(ANSI.yellow)  ⚠\(ANSI.reset)  Skipped \(op.sourceURL.lastPathComponent): \(error.localizedDescription)")
                 }
@@ -65,5 +66,14 @@ public final class FileMover {
         }
 
         return (succeeded, skipped)
+    }
+
+    private static func permissionError(_ error: Error) -> Error? {
+        let nsError = error as NSError
+        if (nsError.domain == NSPOSIXErrorDomain && [1, 13].contains(nsError.code)) ||
+            (nsError.domain == NSCocoaErrorDomain && [257, 513].contains(nsError.code)) {
+            return KRAMError.permissionRequired(path: "the selected folder")
+        }
+        return nil
     }
 }

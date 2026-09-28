@@ -206,6 +206,7 @@ let mover = FileMover()
 var succeededOps: [PlannedOperation] = []
 var skippedCount = 0
 var failedCount = 0
+var permissionMessagePrinted = false
 
 for op in operations {
     let result = mover.apply(operations: [op], boundary: targetURL, verbose: false)
@@ -217,8 +218,21 @@ for op in operations {
             failedCount += 1
             UI.printMoveFailure(sourceName: op.sourceURL.lastPathComponent, reason: "safety violation")
         } else {
-            skippedCount += 1
-            UI.printMoveWarning(sourceName: op.sourceURL.lastPathComponent, reason: err.localizedDescription)
+            let isPermission: Bool
+            if case KRAMError.permissionRequired = err {
+                isPermission = true
+                failedCount += 1
+                if !permissionMessagePrinted {
+                    UI.printError(err.localizedDescription)
+                    permissionMessagePrinted = true
+                }
+            } else {
+                isPermission = false
+                skippedCount += 1
+            }
+            if !isPermission {
+                UI.printMoveWarning(sourceName: op.sourceURL.lastPathComponent, reason: err.localizedDescription)
+            }
         }
     }
 }
