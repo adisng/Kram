@@ -48,6 +48,11 @@ if let unknown = parsed.unknownCommand {
     exit(1)
 }
 
+if parsed.json && parsed.apply && !parsed.yes {
+    fputs("--json --apply requires --yes\n", stderr)
+    exit(1)
+}
+
 // 2. Help and Version
 if parsed.showHelp {
     UI.printHelp()
@@ -177,6 +182,9 @@ let operations = planner.plan(files: files, boundary: targetURL)
 let skipped = getSkippedFiles(in: targetURL, recursive: parsed.recursive)
 
 // 9. Preview
+if parsed.json {
+    UI.printDryRunJSON(targetURL: targetURL, scannedCount: files.count, operations: operations, skippedFiles: skipped)
+} else {
 UI.printDryRunPreview(
     targetURL: targetURL,
     scannedCount: files.count,
@@ -186,6 +194,7 @@ UI.printDryRunPreview(
     isCurrentDir: parsed.isCurrentDir,
     showApplyHint: parsed.dryRun
 )
+}
 
 // 10. Decide whether to proceed to apply
 //   - --dry-run/-n → exit after preview (never prompt, never apply)

@@ -25,6 +25,7 @@ public struct KRAMArguments {
     public var showCompletion: Bool = false
     public var showHistory: Bool = false
     public var transactionID: UUID?
+    public var json: Bool = false
     public var completionShell: String? = nil
 
     public init() {}
@@ -71,6 +72,8 @@ public final class ArgumentParser {
                 result.yes = true
             } else if arg == "--smart" {
                 result.smart = true
+            } else if arg == "--json" {
+                result.json = true
             } else if arg.hasPrefix("--") {
                 result.unknownCommand = arg
             } else if arg.hasPrefix("-") && arg.count > 1 {

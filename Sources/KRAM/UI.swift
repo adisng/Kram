@@ -140,6 +140,19 @@ Run  \(ANSI.bold)kr help\(ANSI.reset)  to see all commands.
         }
     }
 
+    public static func printDryRunJSON(targetURL: URL, scannedCount: Int, operations: [PlannedOperation], skippedFiles: [SkippedFileInfo]) {
+        let payload: [String: Any] = [
+            "mode": "dry-run",
+            "directory": targetURL.path,
+            "scanned": scannedCount,
+            "toMove": operations.count,
+            "skipped": skippedFiles.count,
+            "operations": operations.map { ["source": $0.sourceURL.path, "destination": $0.destinationURL.path, "category": $0.category] }
+        ]
+        if let data = try? JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys]),
+           let output = String(data: data, encoding: .utf8) { print(output) }
+    }
+
     // MARK: - Ready to Apply
 
     public static func promptApplyConfirmation(targetURL: URL, count: Int) -> Bool {
