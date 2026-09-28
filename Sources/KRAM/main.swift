@@ -72,6 +72,12 @@ if parsed.showLast {
     exit(0)
 }
 
+if parsed.showHistory {
+    let history = try? TransactionManager().listTransactions()
+    UI.printHistory(history ?? [])
+    exit(0)
+}
+
 // 3b. Completion
 if parsed.showCompletion {
     let shell = parsed.completionShell ?? {
@@ -102,7 +108,7 @@ if parsed.undo {
     UI.printUndoHeader(appliedAt: latest.appliedAt, count: latest.operations.count)
 
     do {
-        let count = try txManager.undo(boundary: boundary, verbose: true)
+        let count = try txManager.undo(boundary: boundary, id: parsed.transactionID, verbose: true)
         UI.printUndoSummary(restoredCount: count)
     } catch KRAMError.noTransactionToUndo {
         UI.printWarning("No transaction found for this directory.")

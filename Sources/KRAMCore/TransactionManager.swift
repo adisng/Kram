@@ -31,11 +31,34 @@ public final class TransactionManager {
 
         let data = try encoder.encode(transaction)
         let file = transactionsDir.appendingPathComponent("\(transaction.id.uuidString).json")
-        try data.write(to: file)
+        let temp = transactionsDir.appendingPathComponent(".\(transaction.id.uuidString).tmp")
+        try data.write(to: temp, options: .atomic)
+        if fm.fileExists(atPath: file.path) {
+            try fm.replaceItemAt(file, withItemAt: temp, backupItemName: nil, options: .usingNewMetadataOnly)
+        } else {
+            try fm.moveItem(at: temp, to: file)
+        }
 
         // Update stats and recents after successful transaction
         StatsManager.shared.record(transaction: transaction)
         RecentsManager.shared.add(path: transaction.rootDirectory)
+        try pruneTransactions()
+    }
+
+    public func listTransactions() throws -> [Transaction] {
+        let files = try fm.contentsOfDirectory(at: transactionsDir, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
+        let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
+        return files.filter { $0.pathExtension == "json" }.compactMap { file in
+            do { return try decoder.decode(Transaction.self, from: Data(contentsOf: file)) }
+            catch { fputs("\(ANSI.yellow)⚠ Skipping unreadable transaction \(file.lastPathComponent)\(ANSI.reset)\n", stderr); return nil }
+        }.sorted { $0.appliedAt > $1.appliedAt }
+    }
+
+    private func pruneTransactions() throws {
+        let transactions = try listTransactions()
+        for transaction in transactions.dropFirst(50) {
+            try? fm.removeItem(at: transactionsDir.appendingPathComponent("\(transaction.id.uuidString).json"))
+        }
     }
 
     // MARK: - Load Latest
@@ -67,8 +90,14 @@ public final class TransactionManager {
     // MARK: - Undo
 
     /// Reverses the latest transaction. Returns count of files restored.
-    public func undo(boundary: URL, verbose: Bool = false) throws -> Int {
-        guard let transaction = try loadLatest(for: boundary) else {
+    public func undo(boundary: URL, id: UUID? = nil, verbose: Bool = false) throws -> Int {
+        let transaction: Transaction?
+        if let id {
+            transaction = try listTransactions().first { $0.id == id }
+        } else {
+            transaction = try loadLatest(for: boundary)
+        }
+        guard let transaction else {
             throw KRAMError.noTransactionToUndo
         }
 

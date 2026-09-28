@@ -258,6 +258,16 @@ Run  \(ANSI.bold)kr help\(ANSI.reset)  to see all commands.
         print()
     }
 
+    public static func printHistory(_ transactions: [Transaction]) {
+        print("\n🐭 \(ANSI.bold)KRAM — History\(ANSI.reset)")
+        print(divider)
+        if transactions.isEmpty { print("  No transactions found.") }
+        for tx in transactions {
+            print("  \(tx.id.uuidString)  \(formatDate(tx.appliedAt))  \(formatDisplayPath(tx.rootDirectory))  \(tx.operations.count) files")
+        }
+        print(divider)
+    }
+
     // MARK: - Stats
 
     public static func printStats(_ stats: KRAMStats) {

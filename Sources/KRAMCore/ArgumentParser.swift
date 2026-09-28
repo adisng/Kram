@@ -23,6 +23,8 @@ public struct KRAMArguments {
     public var yes: Bool = false
     public var smart: Bool = false
     public var showCompletion: Bool = false
+    public var showHistory: Bool = false
+    public var transactionID: UUID?
     public var completionShell: String? = nil
 
     public init() {}
@@ -113,6 +115,10 @@ public final class ArgumentParser {
                     result.showStats = true
                     result.command = .stats
                     continue
+                case "history":
+                    result.showHistory = true
+                    result.command = .last
+                    continue
                 case "help":
                     result.showHelp = true
                     result.command = .help
@@ -166,6 +172,10 @@ public final class ArgumentParser {
             // All other subsequent positional args also fall through to path resolution.
 
             // Check for alias first
+            if result.undo && result.transactionID == nil, let id = UUID(uuidString: arg) {
+                result.transactionID = id
+                continue
+            }
             if let aliasURL = resolveTarget(arg) {
                 result.targetURL = aliasURL
                 if lower == "here" { result.isCurrentDir = true }
